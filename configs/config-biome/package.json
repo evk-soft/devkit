@@ -1,5 +1,5 @@
 {
-  "name": "@evk-soft/biome-config",
+  "name": "@evk-soft/config-biome",
   "version": "0.0.0",
   "files": [
     "biome.json",

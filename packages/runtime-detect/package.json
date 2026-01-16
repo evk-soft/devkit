@@ -1,0 +1,19 @@
+{
+  "name": "@evk-soft/runtime-detect",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
+

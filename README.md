@@ -19,8 +19,8 @@ pnpm check
 
 ## Packages
 
-- `@evk-soft/tsconfig` — shareable TS config presets
-- `@evk-soft/biome-config` — Biome config preset(s)
+- `@evk-soft/config-typescript` — shareable TS config presets
+- `@evk-soft/config-biome` — Biome config preset(s)
 
 ## Runtime support (Node + Bun)
 

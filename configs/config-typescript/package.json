@@ -1,5 +1,5 @@
 {
-  "name": "@evk-soft/tsconfig",
+  "name": "@evk-soft/config-typescript",
   "version": "0.0.0",
   "files": [
     "*.json"

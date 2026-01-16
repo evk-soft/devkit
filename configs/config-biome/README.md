@@ -1,4 +1,4 @@
-# @evk-soft/biome-config
+# @evk-soft/config-biome
 
 Biome preset(s) for **@evk-soft** projects.
 
@@ -11,6 +11,6 @@ Two common ways to use this package:
 - Point Biome at this config when running commands:
 
 ```bash
-biome check --config-path ./node_modules/@evk-soft/biome-config/biome.json .
+biome check --config-path ./node_modules/@evk-soft/config-biome/biome.json .
 ```
 
