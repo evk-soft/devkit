@@ -1,0 +1,12 @@
+{
+  "name": "@evk-soft/biome-config",
+  "version": "0.0.0",
+  "files": [
+    "biome.json",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
+

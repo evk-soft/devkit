@@ -1,0 +1,11 @@
+{
+  "name": "@evk-soft/tsconfig",
+  "version": "0.0.0",
+  "files": [
+    "*.json"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
+
