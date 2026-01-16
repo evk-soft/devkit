@@ -6,4 +6,3 @@ export type Runtime =
 export function detectRuntime(): Runtime;
 export function isBun(): boolean;
 export function isNode(): boolean;
-

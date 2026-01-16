@@ -11,6 +11,6 @@ Two common ways to use this package:
 - Point Biome at this config when running commands:
 
 ```bash
-biome check --config-path ./node_modules/@evk-soft/config-biome/biome.json .
+biome check --config-path ./node_modules/@evk-soft/config-biome/biome.preset.json .
 ```
 

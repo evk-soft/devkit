@@ -2,8 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const isBun = typeof globalThis.Bun !== "undefined" || Boolean(process?.versions?.bun);
-const runtime = isBun ? `bun@${process.versions.bun}` : `node@${process.version}`;
+const isBun =
+  typeof globalThis.Bun !== "undefined" || Boolean(process?.versions?.bun);
+const runtime = isBun
+  ? `bun@${process.versions.bun}`
+  : `node@${process.version}`;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -18,6 +21,6 @@ assertFile("package.json");
 assertFile("pnpm-workspace.yaml");
 assertFile("configs/config-typescript/package.json");
 assertFile("configs/config-biome/package.json");
+assertFile("configs/config-biome/biome.preset.json");
 
 console.log(`[devkit] runtime-check ok (${runtime})`);
-

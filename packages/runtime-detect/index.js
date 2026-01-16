@@ -20,4 +20,3 @@ export function isBun() {
 export function isNode() {
   return detectRuntime().name === "node";
 }
-
