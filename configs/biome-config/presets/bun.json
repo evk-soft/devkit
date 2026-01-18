@@ -1,0 +1,46 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "correctness": {
+        "noNodejsModules": "off"
+      },
+      "style": {
+        "useNodejsImportProtocol": "off"
+      },
+      "suspicious": {
+        "noConsole": "off"
+      }
+    }
+  },
+  "javascript": {
+    "globals": [
+      "Bun",
+      "console",
+      "process",
+      "setTimeout",
+      "setInterval",
+      "setImmediate",
+      "clearTimeout",
+      "clearInterval",
+      "clearImmediate",
+      "queueMicrotask",
+      "fetch",
+      "Headers",
+      "Request",
+      "Response",
+      "FormData",
+      "Blob",
+      "File",
+      "URL",
+      "URLSearchParams",
+      "ReadableStream",
+      "WritableStream",
+      "TransformStream",
+      "TextEncoder",
+      "TextDecoder",
+      "WebSocket"
+    ]
+  }
+}

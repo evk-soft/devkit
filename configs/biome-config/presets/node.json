@@ -1,0 +1,35 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "correctness": {
+        "noNodejsModules": "off"
+      },
+      "style": {
+        "useNodejsImportProtocol": "error"
+      },
+      "suspicious": {
+        "noConsole": "off"
+      }
+    }
+  },
+  "javascript": {
+    "globals": [
+      "NodeJS",
+      "__dirname",
+      "__filename",
+      "Buffer",
+      "global",
+      "process",
+      "console",
+      "setTimeout",
+      "setInterval",
+      "setImmediate",
+      "clearTimeout",
+      "clearInterval",
+      "clearImmediate",
+      "queueMicrotask"
+    ]
+  }
+}

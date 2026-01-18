@@ -1,0 +1,57 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "a11y": {
+        "noAccessKey": "error",
+        "noAriaUnsupportedElements": "error",
+        "noAutofocus": "warn",
+        "noDistractingElements": "error",
+        "noHeaderScope": "error",
+        "noNoninteractiveElementToInteractiveRole": "error",
+        "noNoninteractiveTabindex": "error",
+        "noPositiveTabindex": "error",
+        "noRedundantAlt": "error",
+        "noRedundantRoles": "error",
+        "useAltText": "error",
+        "useAnchorContent": "error",
+        "useAriaActivedescendantWithTabindex": "error",
+        "useAriaPropsForRole": "error",
+        "useButtonType": "error",
+        "useHeadingContent": "error",
+        "useHtmlLang": "error",
+        "useIframeTitle": "error",
+        "useKeyWithClickEvents": "error",
+        "useKeyWithMouseEvents": "error",
+        "useMediaCaption": "error",
+        "useValidAnchor": "error",
+        "useValidAriaProps": "error",
+        "useValidAriaRole": "error",
+        "useValidAriaValues": "error",
+        "useValidLang": "error"
+      },
+      "correctness": {
+        "noChildrenProp": "error",
+        "noRenderReturnValue": "error",
+        "noVoidElementsWithChildren": "error",
+        "useExhaustiveDependencies": "error",
+        "useHookAtTopLevel": "error"
+      },
+      "style": {
+        "useFragmentSyntax": "error",
+        "useSelfClosingElements": "error"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "warn",
+        "noCommentText": "error"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "jsxQuoteStyle": "double"
+    },
+    "globals": ["React", "JSX"]
+  }
+}

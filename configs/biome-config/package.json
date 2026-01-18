@@ -7,20 +7,40 @@
   "publishConfig": {
     "access": "public"
   },
+  "keywords": [
+    "biome",
+    "biomejs",
+    "config",
+    "lint",
+    "format",
+    "typescript",
+    "javascript"
+  ],
   "peerDependencies": {
     "@biomejs/biome": "^2.3.11"
   },
   "main": "./biome.preset.json",
   "exports": {
     ".": "./biome.preset.json",
-    "./presets/base": "./presets/base.json"
+    "./presets/base": "./presets/base.json",
+    "./presets/node": "./presets/node.json",
+    "./presets/react": "./presets/react.json",
+    "./presets/typescript": "./presets/typescript.json",
+    "./presets/bun": "./presets/bun.json",
+    "./presets/test": "./presets/test.json",
+    "./presets/strict": "./presets/strict.json",
+    "./presets/imports": "./presets/imports.json"
   },
   "files": [
     "biome.preset.json",
     "presets",
+    "scripts",
     "README.md",
     "LICENSE"
   ],
+  "scripts": {
+    "validate": "node scripts/pre-commit.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/evk-soft/devkit.git",

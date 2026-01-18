@@ -1,0 +1,22 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "suspicious": {
+        "noConsole": "error",
+        "noDebugger": "error"
+      },
+      "style": {
+        "noNegationElse": "error"
+      },
+      "correctness": {
+        "noUnusedImports": "error"
+      },
+      "complexity": {
+        "noForEach": "error",
+        "noStaticOnlyClass": "error"
+      }
+    }
+  }
+}
