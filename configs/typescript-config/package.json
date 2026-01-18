@@ -1,0 +1,26 @@
+{
+  "name": "@evk-soft/typescript-config",
+  "version": "0.1.0",
+  "description": "Shareable tsconfig presets for evk-soft/devkit",
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "*.json",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/evk-soft/devkit.git",
+    "directory": "configs/typescript-config"
+  },
+  "bugs": {
+    "url": "https://github.com/evk-soft/devkit/issues"
+  },
+  "homepage": "https://github.com/evk-soft/devkit#readme"
+}
