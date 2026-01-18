@@ -1,0 +1,28 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+  "javascript": {
+    "globals": [
+      "window",
+      "document",
+      "navigator",
+      "location",
+      "console",
+      "fetch",
+      "Headers",
+      "Request",
+      "Response",
+      "FormData",
+      "Blob",
+      "File",
+      "URL",
+      "URLSearchParams",
+      "ReadableStream",
+      "WritableStream",
+      "TransformStream",
+      "TextEncoder",
+      "TextDecoder",
+      "WebSocket",
+      "AbortController"
+    ]
+  }
+}

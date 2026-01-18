@@ -1,0 +1,2 @@
+pnpm -s exec biome check --write .
+git add -A

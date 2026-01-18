@@ -24,7 +24,9 @@ Create `biome.json` in your repo:
 - `typescript`: TypeScript-specific rules and overrides
 - `node`: Node.js globals and Node-focused rules
 - `bun`: Bun globals and Bun-focused rules
+- `browser`: browser globals (frontend)
 - `react`: React/JSX a11y + correctness rules
 - `imports`: import-related rules (e.g. unused imports)
 - `test`: relaxed rules for tests
 - `strict`: stricter rules (good for libraries/production)
+- `performance`: performance-focused rules (opt-in)

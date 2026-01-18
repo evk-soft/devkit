@@ -29,18 +29,16 @@
     "./presets/bun": "./presets/bun.json",
     "./presets/test": "./presets/test.json",
     "./presets/strict": "./presets/strict.json",
-    "./presets/imports": "./presets/imports.json"
+    "./presets/imports": "./presets/imports.json",
+    "./presets/browser": "./presets/browser.json",
+    "./presets/performance": "./presets/performance.json"
   },
   "files": [
     "biome.preset.json",
     "presets",
-    "scripts",
     "README.md",
     "LICENSE"
   ],
-  "scripts": {
-    "validate": "node scripts/pre-commit.js"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/evk-soft/devkit.git",

@@ -22,10 +22,12 @@
     "check": "pnpm run check:biome && pnpm run check:runtime",
     "check:biome": "biome check .",
     "check:runtime": "node ./scripts/runtime-check.mjs",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",
+    "husky": "^9.1.7",
     "typescript": "^5.9.3"
   }
 }
