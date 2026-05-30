@@ -7,3 +7,7 @@ Common targets:
 - Cursor: `.cursor/rules/*.mdc`
 - GitHub Copilot: `.github/copilot-instructions.md`
 
+Available templates:
+
+- [`code-review-lite.md`](./code-review-lite.md): lightweight confidence gate for AI-generated code review.
+
