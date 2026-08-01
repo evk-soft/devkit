@@ -1,7 +1,7 @@
 # Platform Distribution Baseline
 
 Status: evidence input for adapter plans
-Verified: 2026-08-01
+Verified: 2026-08-02
 
 ## Purpose
 
@@ -22,9 +22,24 @@ ChatGPT surfaces.
 Project guidance and plugin distribution are separate adapter targets. Codex project guidance uses
 `AGENTS.md` and skills; `.codex/rules` is not a general repository-guidance destination.
 
+Project-discovery evidence, verified 2026-08-02:
+
+| Stage 1 target | Official source | Short source excerpt |
+|---|---|---|
+| Root `AGENTS.md` | https://learn.chatgpt.com/docs/agent-configuration/agents-md | “In your repository root, add an `AGENTS.md`” |
+| Root shadow check | https://learn.chatgpt.com/docs/agent-configuration/agents-md | “it checks for `AGENTS.override.md`, then `AGENTS.md`” |
+| `.agents/skills/<skill-name>/SKILL.md` | https://learn.chatgpt.com/docs/build-skills | “For repositories, Codex scans `.agents/skills`”; “A skill is a directory with a `SKILL.md` file” |
+
+The adapter chooses the documented repository-root variants. Codex discovers both surfaces natively;
+no import statement or user-global configuration is required. Because the documented same-directory
+precedence checks `AGENTS.override.md` first, Stage 1 clean init treats a pre-existing root override
+as a blocking shadow rather than generating an ignored root `AGENTS.md`.
+
 Official sources:
 
 - https://learn.chatgpt.com/docs/plugins
+- https://learn.chatgpt.com/docs/agent-configuration/agents-md
+- https://learn.chatgpt.com/docs/build-skills
 - https://developers.openai.com/plugins/build/plugins
 - https://developers.openai.com/plugins/concepts/skills
 
@@ -38,11 +53,27 @@ naming and precedence.
 The adapter must treat project output and plugin output as separate capabilities. Executable
 components require explicit trust and testing.
 
+Project-discovery evidence, verified 2026-08-02:
+
+| Stage 1 target | Official source | Short source excerpt |
+|---|---|---|
+| Root `CLAUDE.md` | https://code.claude.com/docs/en/memory | “A project CLAUDE.md can be stored in either `./CLAUDE.md` or `./.claude/CLAUDE.md`.” |
+| `.claude/rules/**/*.md` | https://code.claude.com/docs/en/memory | “Place markdown files in your project’s `.claude/rules/` directory”; “All `.md` files are discovered recursively” |
+| `.claude/skills/<skill-name>/SKILL.md` | https://code.claude.com/docs/en/skills | “Project skills load from `.claude/skills/`”; “Each skill is a directory with `SKILL.md` as the entrypoint” |
+
+The adapter deliberately chooses the documented root `CLAUDE.md` variant and the native project
+rules and project skills directories. Claude Code discovers these surfaces without a generated
+import statement or user-global change. Because `.claude/CLAUDE.md` is a documented alternative to
+the chosen root entry, Stage 1 clean init treats its pre-existence as a blocking alternative rather
+than silently creating a second project instruction entry.
+
 Official sources:
 
 - https://code.claude.com/docs/en/plugins
 - https://code.claude.com/docs/en/plugins-reference
 - https://code.claude.com/docs/en/plugin-marketplaces
+- https://code.claude.com/docs/en/memory
+- https://code.claude.com/docs/en/skills
 
 ## Gemini CLI
 
@@ -97,4 +128,6 @@ Official sources:
    `uninstall` separately.
 6. Hooks, executables, connectors, MCP servers, and browser capabilities cross a stronger trust
    boundary than instruction-only skills.
-7. Adapter implementation and release require fresh official-source fixtures.
+7. Immediately before adapter implementation and again before release, capture a fresh dated
+   official-source fixture with exact paths, case, extensions, alternatives, shadowing precedence,
+   and import requirements.

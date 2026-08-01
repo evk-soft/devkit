@@ -57,9 +57,11 @@ The following exact paths were tested with `Test-Path`:
 
 ```text
 absent AGENTS.md
+absent AGENTS.override.md
 absent CLAUDE.md
 absent .agents
 absent .claude
+absent .claude/CLAUDE.md
 absent ai-tooling.config.json
 absent ai-tooling.lock.json
 absent .ai-tooling
@@ -116,5 +118,35 @@ machine path, hidden file, copied implementation block, or durable reverse link 
 written-spec verdict on the same snapshot was NOT READY because lifecycle and grounding contracts
 still required repairs. Both verdicts apply only to those exact prior bytes.
 
-After any edit, publication safety and written-spec consistency require a new frozen snapshot and a
-targeted re-audit.
+### Approved owner-review snapshot
+
+Before the authorized documentation corrections began, a separate gate confirmed:
+
+```text
+branch    codex/ai-tooling-design
+HEAD      a77cba2c1653c9bc0356c47f6500cc72f2ef510d
+main      550a56e6a8a82153741f9ab26cfdd2f7eaf100d9
+upstream  none
+worktree  clean
+```
+
+The correction applies option A, NEW-1, and A-1 through A-9 from the owner review. The final review
+correction also resolves R1 through R3 and M1 through M2. On 2026-08-02, the repository owner
+approved this exact five-file snapshot with `approve written design`.
+
+The corrected owner-review bytes are identified by both SHA-256 and line count:
+
+| Document | SHA-256 | Lines |
+| --- | --- | ---: |
+| Durable architecture | `16d0af83199a906b3582c29833d1e64a5fafb145d5cd30a2febda29e723ae046` | 1464 |
+| Umbrella specification | `c63e0f6a2c901de325a5d54c1d170c562a968b3595aa97f0cd90874711a9597d` | 333 |
+| Stage 1 child specification | `69c5ff603d18b1afaf56d9632e20996738b08eb0f183a7ae3753c9fe57534ba4` | 757 |
+| Platform distribution baseline | `e66e4e6046a5b40a1da5e4a7bd3141f7135ab543f4ee345349174f8cb06de169` | 133 |
+
+The approved pre-record baseline was 152 lines with SHA-256
+`5a3b8efe287675e5750b2054f2a9e9ed7987c28415a5eed669170f2d6ae0a06e`. This historical digest
+identifies its owner-reviewed bytes, not the current file. Unrelated `.idea/**` files appeared after
+the clean pre-edit gate; they are outside this snapshot and must stay out of the approval commit.
+
+Apart from the explicitly authorized status, review-gate, and snapshot-record edits, any later
+design-content edit requires a new frozen snapshot and renewed owner review.
