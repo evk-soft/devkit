@@ -52,3 +52,8 @@ The first content review may evaluate neutral candidates such as:
 
 Every candidate must be rewritten, assigned an `evk-` name and `evk-soft/...` identifier, checked for
 hidden project assumptions, and accepted through its own content review before publication.
+
+Detailed future rule families, task-triggered skills, operational workflows, provider packs, and
+portability gates are retained in the
+[Reusable AI Content Candidate Roadmap](./reusable-content-candidates.md). That roadmap is research
+input and does not expand the current Stage 1 proposal.
