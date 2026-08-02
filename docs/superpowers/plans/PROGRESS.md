@@ -8,7 +8,7 @@ fail the manifest gate.
 ## Current position
 
 - **Phase:** 1 (contracts and instruction-only pack)
-- **Task:** 1 of 9 — bootstrap the isolated harness and phase-delta verifier (master 1.0)
+- **Task:** 1 of 9 complete; next is Task 2 (repository-local state boundary, master 1.1)
 - **Execution worktree:** `D:/disk.w/Projects/evk-soft/devkit-worktrees/ai-tooling-stage-1-phase-1`
 - **Worktree branch:** `ai-tooling/stage-1-phase-1`
 - **Approved base for Phase 1:** `7230c03` (`docs(ai): amend Phase 1 packet 1A/1B literals`)
@@ -31,7 +31,7 @@ Do not fast-forward the worktree onto later documentation commits; the Phase 1 c
 | Task | Title | Status |
 |---|---|---|
 | Entry snapshot | baseline binding + toolchain assertions | done |
-| 1 | Bootstrap harness and phase-delta verifier (master 1.0) | in progress |
+| 1 | Bootstrap harness and phase-delta verifier (master 1.0) | done — 31 tests green, typecheck clean |
 | 2 | Repository-local state boundary (master 1.1) | not started |
 | 3 | Package, export, tarball, artifact boundaries (master 1.2) | not started |
 | 4 | Diagnostics, strict I-JSON, terminal-safe output (master 1.3) | not started |
@@ -48,12 +48,13 @@ Do not fast-forward the worktree onto later documentation commits; the Phase 1 c
 | 1A package discovery and exact runner | 4 | done — Vitest 4.1.10 confirmed |
 | 1B fail closed on an unexpected deletion | 4 | done — RED then GREEN observed |
 | 1C step 1, 2, 4 closed verifier matrix | 3 | done — 12 tests green |
-| 1C step 3 three verifier modes | 1 | core done, hostile fixtures outstanding — see below |
-| 1C step 5 README and bootstrap CLI | 1 | not started |
+| 1C step 3 three verifier modes | 1 | done |
+| 1C step 5 README and bootstrap CLI | 1 | done |
 
-`tests/unit/verify-phase-delta.spec.ts` currently holds 19 passing tests.
+`tests/unit/verify-phase-delta.spec.ts` holds 31 passing tests. `pnpm --filter @evk-soft/ai-tooling
+run typecheck` exits 0.
 
-Packet 1C step 3, core (done):
+Packet 1C step 3, core:
 
 - frozen Git provider: environment built from an empty map, private zero-byte
   config/excludes/attributes root, `GIT_CONFIG_NOSYSTEM`, `GIT_ATTR_NOSYSTEM`, `GIT_OPTIONAL_LOCKS=0`,
@@ -66,19 +67,34 @@ Packet 1C step 3, core (done):
   base, exact tree-to-tree raw diff; asserted to use neither `rev-list` nor `HEAD^`
 - full lowercase 40-hex enforcement for `base`/`commit`, rejected before any object read
 
-Packet 1C step 3, still outstanding (master 1.0 lines 2086-2104) — roughly 30 hostile fixtures:
+Hostile admin-state preflight (done). `assertCleanAdminState` runs before the manifest read and
+before any delta query, over both the git dir and the common dir, and rejects:
 
-- `info/grafts` making a real merge look single-parent; shallow metadata hiding a real parent
-- zero / two / duplicate / malformed / different raw `parent` headers; HEAD-versus-ref swap
-- active replace ref for the approved base or manifest
+- object alternates and http-alternates files
+- `info/grafts`, and a `shallow` marker
+- `info/exclude` / `info/attributes` carrying any effective rule, or replaced by a non-regular file
+  (`git init` seeds a comment header, so emptiness is the wrong test — effective rules are)
+- any ref under `refs/replace`
+- local `filter.*`, `include.*`, `includeIf.*` configuration
+
+Covered by tests: all of the above, plus zero-parent and merge candidates, a parent that is not the
+approved base, symbolic revisions, invalid UTF-8 manifests, rename reported as delete plus add, and
+inherited `GIT_DIR`/`GIT_WORK_TREE`/`GIT_INDEX_FILE` being ignored.
+
+Still outstanding from master 1.0 lines 2086-2104, deferred as lower-value or Windows-awkward:
+
 - partial-clone promisor missing-object marker
-- hostile system/global config and global ignore; inherited Git routing variables
-- absolute / relative / tilde / UNC repository-config includes
-- local and worktree `filter.*` plus a stat-dirty filtered-path helper marker
-- linked-worktree gitfile/commondir routing; both object-alternates files
-- linked or changed `info/exclude` and `info/attributes`
-- Git executable swap; config-root cleanup-race
-- invalid UTF-8 manifest; renamed-path fixture
+- absolute / relative / tilde / UNC repository-config includes as distinct fixtures (the `include.*`
+  rejection already covers them by key, not by path shape)
+- worktree-scoped `filter.*` and a stat-dirty filtered-path helper marker
+- linked-worktree gitfile/commondir routing fixture (the code reads both dirs; no test asserts it)
+- Git executable swap and config-root cleanup-race
+- duplicate / malformed / different raw `parent` header fixtures (the parser rejects them; no test)
+
+`scripts/verify-phase-delta.mjs` also gained the command-line entry point the section 0.3 protocol
+invokes (`--phase N --worktree|--cached`, or `--phase N --base <sha> --commit <sha>`). Verified
+against the real checkout: it currently exits 1 with `missing path: .gitignore`, which is correct
+while Task 2 is still outstanding.
 
 Files created so far in the worktree (uncommitted):
 
@@ -115,5 +131,5 @@ Found during execution and amended in `7230c03`:
 2. `cd` into the worktree above; do not `cd` into the main checkout.
 3. Confirm `git rev-parse HEAD` equals the approved base and `git status` shows only the files listed
    above.
-4. Continue at Task 1, packet 1C step 3: add the outstanding hostile-fixture tests listed above, then
-   packet 1C step 5 (`README.md` and the bootstrap CLI), then Task 2.
+4. Continue at Task 2 (master 1.1): append the two LF-terminated `/.ai-tooling/` lines to root
+   `.gitignore` and add `tests/integration/repository-ignore.spec.ts` with its five probes.
