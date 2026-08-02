@@ -48,8 +48,37 @@ Do not fast-forward the worktree onto later documentation commits; the Phase 1 c
 | 1A package discovery and exact runner | 4 | done — Vitest 4.1.10 confirmed |
 | 1B fail closed on an unexpected deletion | 4 | done — RED then GREEN observed |
 | 1C step 1, 2, 4 closed verifier matrix | 3 | done — 12 tests green |
-| 1C step 3 three verifier modes | 1 | partial — `worktree` implemented; `cached` and `commit` not started |
+| 1C step 3 three verifier modes | 1 | core done, hostile fixtures outstanding — see below |
 | 1C step 5 README and bootstrap CLI | 1 | not started |
+
+`tests/unit/verify-phase-delta.spec.ts` currently holds 19 passing tests.
+
+Packet 1C step 3, core (done):
+
+- frozen Git provider: environment built from an empty map, private zero-byte
+  config/excludes/attributes root, `GIT_CONFIG_NOSYSTEM`, `GIT_ATTR_NOSYSTEM`, `GIT_OPTIONAL_LOCKS=0`,
+  `GIT_NO_REPLACE_OBJECTS`, `GIT_NO_LAZY_FETCH`, `GIT_LITERAL_PATHSPECS`, plus
+  `--no-replace-objects --no-lazy-fetch --literal-pathspecs` and `core.fsmonitor/untrackedCache=false`
+  on every query; argv arrays only, `shell: false` asserted by test
+- `worktree` mode, including the nonempty-index rejection
+- `cached` mode via `diff --cached --name-status --no-renames -z` plus `ls-files --stage` for modes
+- `commit` mode: raw `cat-file commit` parse, exactly-one-parent rule, parent must equal the approved
+  base, exact tree-to-tree raw diff; asserted to use neither `rev-list` nor `HEAD^`
+- full lowercase 40-hex enforcement for `base`/`commit`, rejected before any object read
+
+Packet 1C step 3, still outstanding (master 1.0 lines 2086-2104) — roughly 30 hostile fixtures:
+
+- `info/grafts` making a real merge look single-parent; shallow metadata hiding a real parent
+- zero / two / duplicate / malformed / different raw `parent` headers; HEAD-versus-ref swap
+- active replace ref for the approved base or manifest
+- partial-clone promisor missing-object marker
+- hostile system/global config and global ignore; inherited Git routing variables
+- absolute / relative / tilde / UNC repository-config includes
+- local and worktree `filter.*` plus a stat-dirty filtered-path helper marker
+- linked-worktree gitfile/commondir routing; both object-alternates files
+- linked or changed `info/exclude` and `info/attributes`
+- Git executable swap; config-root cleanup-race
+- invalid UTF-8 manifest; renamed-path fixture
 
 Files created so far in the worktree (uncommitted):
 
@@ -86,4 +115,5 @@ Found during execution and amended in `7230c03`:
 2. `cd` into the worktree above; do not `cd` into the main checkout.
 3. Confirm `git rev-parse HEAD` equals the approved base and `git status` shows only the files listed
    above.
-4. Continue at Task 1, packet 1C step 3: implement the `cached` and `commit` verifier modes.
+4. Continue at Task 1, packet 1C step 3: add the outstanding hostile-fixture tests listed above, then
+   packet 1C step 5 (`README.md` and the bootstrap CLI), then Task 2.
