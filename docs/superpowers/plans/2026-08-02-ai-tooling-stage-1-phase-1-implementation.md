@@ -438,12 +438,19 @@ export default defineConfig({
     passWithNoTests: false,
     retry: 0,
     pool: 'forks',
-    poolOptions: { forks: { singleFork: true } },
+    maxWorkers: 1,
     testTimeout: 30_000,
     hookTimeout: 30_000,
   },
 });
 ```
+
+Vitest 4 removed `test.poolOptions`; the pinned 4.1.10 ignores it and only prints a deprecation
+notice, so the former `poolOptions.forks.singleFork` would silently not apply. `maxWorkers: 1` is the
+supported replacement for serial execution. `isolate` deliberately keeps its default `true`: the
+migration guide's literal `singleFork` equivalent also sets `isolate: false`, but Stage 1 tests create
+real temporary repositories and assert containment, so per-file isolation is retained on purpose. Do
+not reintroduce `poolOptions` or add `isolate: false`.
 
 - [ ] **Step 2: install only the approved dependency graph**
 
@@ -472,7 +479,7 @@ Add this test body to `tests/unit/verify-phase-delta.spec.ts`; the local `makeRe
 ```ts
 it('rejects an unexpected deletion', async () => {
   const fixture = await makeRepository({
-    manifest: ['M 100644 kept.txt', 'A 100644 expected.txt'],
+    manifest: ['A 100644 expected.txt', 'M 100644 kept.txt'],
     baseline: { 'kept.txt': 'before\n' },
     worktree: { 'kept.txt': null, 'expected.txt': 'new\n' },
   });
@@ -482,6 +489,11 @@ it('rejects an unexpected deletion', async () => {
   expect(fixture.runtime.spawns.every((spawn) => spawn.shell === false)).toBe(true);
 });
 ```
+
+The fixture manifest is raw-byte sorted (`expected.txt` before `kept.txt`) because `parseManifest` in
+Step 3 rejects an unsorted manifest before any delta comparison runs. Listing `kept.txt` first makes
+this test fail with `manifest paths are duplicate or unsorted` instead of the deletion message, so the
+order is load-bearing, not cosmetic. The scenario is unchanged: `kept.txt` is expected `M` but deleted.
 
 - [ ] **Step 2: run the exact RED command**
 
