@@ -8,8 +8,7 @@ fail the manifest gate.
 ## Current position
 
 - **Phase:** 1 (contracts and instruction-only pack)
-- **Task:** 1 and 2 of 9 complete; next is Task 3 (package, export, tarball, artifact boundaries,
-  master 1.2)
+- **Task:** 1 and 2 of 9 complete. Task 3 in progress: packet 3A done, packets 3B and 3C outstanding.
 - **Execution worktree:** `D:/disk.w/Projects/evk-soft/devkit-worktrees/ai-tooling-stage-1-phase-1`
 - **Worktree branch:** `ai-tooling/stage-1-phase-1`
 - **Approved base for Phase 1:** `7230c03` (`docs(ai): amend Phase 1 packet 1A/1B literals`)
@@ -34,7 +33,7 @@ Do not fast-forward the worktree onto later documentation commits; the Phase 1 c
 | Entry snapshot | baseline binding + toolchain assertions | done |
 | 1 | Bootstrap harness and phase-delta verifier (master 1.0) | done — 31 tests green, typecheck clean |
 | 2 | Repository-local state boundary (master 1.1) | done — 5 real-root probes verified |
-| 3 | Package, export, tarball, artifact boundaries (master 1.2) | not started |
+| 3 | Package, export, tarball, artifact boundaries (master 1.2) | packet 3A done; 3B and 3C outstanding |
 | 4 | Diagnostics, strict I-JSON, terminal-safe output (master 1.3) | not started |
 | 5 | Byte-stable schemas and offline registry (master 1.4) | not started |
 | 6 | Config projection, Git URL v1, JCS, digests (master 1.5) | not started |
@@ -150,5 +149,31 @@ Found during execution and amended in `7230c03`:
 2. `cd` into the worktree above; do not `cd` into the main checkout.
 3. Confirm `git rev-parse HEAD` equals the approved base and `git status` shows only the files listed
    above.
-4. Continue at Task 3 (master 1.2): package/export/tarball boundaries, `check-package-contents.mjs`,
-   `check-stage1-artifacts.mjs`, and the artifact-scan security spec with its fixtures.
+4. Continue at Task 3 packet 3B (master 1.2): `scripts/check-package-contents.mjs` — private staging
+   root, isolated build, `pnpm pack` under a frozen environment, and the bounded gzip/tar parser.
+   Then packet 3C: `scripts/check-stage1-artifacts.mjs`, `tests/security/artifact-scan.spec.ts`, and
+   the two fixture files.
+
+### Task 3 notes
+
+Packet 3A (done):
+
+- `packages/ai-tooling/package.json` now carries the exact public surface asserted by
+  `tests/package/package-contract.spec.ts`: `exports` (root, `./schemas/*.json`, `./package.json`),
+  `bin.ai-tooling` -> `./dist/cli.js`, `files` `['dist','schemas','README.md','LICENSE']`,
+  `engines.node >=24.0.0`, `publishConfig.access public`, `license MIT`, and the exact Phase 1 scripts
+- exact dependency pins resolved and verified via `pnpm list --depth 0`: `ajv 8.20.0`,
+  `json-canonicalize 2.0.0`, `jsonc-parser 3.3.1`, `@types/node 24.13.3`, `@vitest/coverage-v8 4.1.10`,
+  `vitest 4.1.10`
+- `TOOLING_VERSION = '0.1.0'` exported from `src/index.ts`
+- `configs/ai/package.json` created as public `@evk-soft/ai-pack-core@0.1.0`, ESM, MIT, `files`
+  `['pack.json','rules','skills','README.md','LICENSE']`, no bin, dependency, script, or code export
+- root `LICENSE` copied byte-identically to `packages/ai-tooling/LICENSE` and `configs/ai/LICENSE`
+  (all three SHA-256 `35d8a4e9e51206c6f19d1c3ce906115c1927386ad25e700d9e17362ab3a0fb6d`)
+
+Note: `test:unit` is now the exact planned script and names `tests/security`, which packet 3C creates.
+Until then run suites explicitly (`vitest run tests/unit tests/integration tests/package`) rather than
+`pnpm run test`.
+
+33 tests pass across 3 files; `typecheck` exits 0; the verifier now reports
+`missing path: configs/ai/README.md`, which is Task 8 work.
