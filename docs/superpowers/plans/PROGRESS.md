@@ -8,8 +8,8 @@ fail the manifest gate.
 ## Current position
 
 - **Phase:** 1 (contracts and instruction-only pack)
-- **Task:** 1, 2 and 3 of 9 complete. Task 4 in progress: packets 4A and 4B done, packet 4C
-  (terminal-safe streaming) outstanding.
+- **Task:** 1 through 4 of 9 complete; next is Task 5 (byte-stable schemas and the offline registry,
+  master 1.4)
 
 Note on the base: the worktree stays at `7230c03`. Plan amendments made after execution began
 (`db67234`) live on the plan branch only; they change prose, never a manifest, so the single Phase 1
@@ -39,7 +39,7 @@ Do not fast-forward the worktree onto later documentation commits; the Phase 1 c
 | 1 | Bootstrap harness and phase-delta verifier (master 1.0) | done — 31 tests green, typecheck clean |
 | 2 | Repository-local state boundary (master 1.1) | done — 5 real-root probes verified |
 | 3 | Package, export, tarball, artifact boundaries (master 1.2) | done — all three packets |
-| 4 | Diagnostics, strict I-JSON, terminal-safe output (master 1.3) | packets 4A and 4B done; 4C outstanding |
+| 4 | Diagnostics, strict I-JSON, terminal-safe output (master 1.3) | done — all three packets |
 | 5 | Byte-stable schemas and offline registry (master 1.4) | not started |
 | 6 | Config projection, Git URL v1, JCS, digests (master 1.5) | not started |
 | 7 | Generated JSON and pack build bytes (master 1.6) | not started |
@@ -154,8 +154,8 @@ Found during execution and amended in `7230c03`:
 2. `cd` into the worktree above; do not `cd` into the main checkout.
 3. Confirm `git rev-parse HEAD` equals the approved base and `git status` shows only the files listed
    above.
-4. Continue at Task 4 packet 4C (master 1.3): `src/diagnostics/terminal-safe.ts`,
-   `src/diagnostics/json.ts`, and `tests/unit/terminal-safe.spec.ts`.
+4. Continue at Task 5 (master 1.4): the seven byte-stable JSON Schema documents under
+   `packages/ai-tooling/schemas/` and the offline Ajv2020 registry with its byte-identity tests.
 
 ### Task 4 notes
 
@@ -180,11 +180,30 @@ Two implementation traps worth remembering:
   assignments made inside closures, so a bare binding narrows to `null` and the post-visit check
   becomes unreachable — it failed the build with `Property 'reason' does not exist on type 'never'`.
 
+Packet 4C (done): `src/diagnostics/terminal-safe.ts` exports `streamHumanTerminalSafeUtf8`,
+`streamJsonTerminalSafeString`, and the two scalar encoders; `src/diagnostics/json.ts` exports
+`renderMachineDiagnostic`, which sorts object keys by raw bytes so one diagnostic always renders the
+same bytes.
+
+- human mode: backslash doubled first, quote escaped, every C0 plus DEL and C1 as uppercase `\xHH`,
+  and the separator and bidi scalars as uppercase `\u{HHHH}`
+- JSON mode: preserves the logical scalar, so `JSON.parse` returns the exact original string, while
+  emitting no hazardous scalar raw
+- both are injective: a user-typed literal backslash sequence and a real control byte cannot collapse
+  into the same output
+- incremental fatal `TextDecoder` with `stream: true`, so a sequence split across chunks is buffered
+  rather than silently replaced; the final flush rejects an incomplete tail
+- encoded bytes are counted before every write, so a one-over result never reaches the sink
+
+The test source builds every hazardous scalar from code points rather than writing it literally.
+An earlier draft embedded raw ESC and BEL bytes, which made the committed test a binary file to Git
+and would have tripped the artifact scanner.
+
 Outstanding in packet 4B: step 5's `@ts-expect-error` assertions need `ConfigV1`, which Task 6
 creates. Do them when `src/config/types.ts` exists.
 
-61 tests pass across the unit, package and security suites, plus the integration suite; `typecheck`
-and the full `pnpm run test` both exit 0.
+68 tests pass across the unit, package and security suites, plus the integration suite; `typecheck`,
+the full `pnpm run test`, and `check-stage1-artifacts.mjs --phase 1 --tree` all exit 0.
 
 ### Task 3 notes
 
