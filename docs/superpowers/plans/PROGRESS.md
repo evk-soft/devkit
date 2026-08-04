@@ -8,7 +8,11 @@ fail the manifest gate.
 ## Current position
 
 - **Phase:** 1 (contracts and instruction-only pack)
-- **Task:** 1 and 2 of 9 complete. Task 3 in progress: packet 3A done, packets 3B and 3C outstanding.
+- **Task:** 1 and 2 of 9 complete. Task 3 in progress: packets 3A and 3B done, packet 3C outstanding.
+
+Note on the base: the worktree stays at `7230c03`. Plan amendments made after execution began
+(`db67234`) live on the plan branch only; they change prose, never a manifest, so the single Phase 1
+commit still takes `7230c03` as its only parent. Reconcile the branches after the phase is approved.
 - **Execution worktree:** `D:/disk.w/Projects/evk-soft/devkit-worktrees/ai-tooling-stage-1-phase-1`
 - **Worktree branch:** `ai-tooling/stage-1-phase-1`
 - **Approved base for Phase 1:** `7230c03` (`docs(ai): amend Phase 1 packet 1A/1B literals`)
@@ -33,7 +37,7 @@ Do not fast-forward the worktree onto later documentation commits; the Phase 1 c
 | Entry snapshot | baseline binding + toolchain assertions | done |
 | 1 | Bootstrap harness and phase-delta verifier (master 1.0) | done — 31 tests green, typecheck clean |
 | 2 | Repository-local state boundary (master 1.1) | done — 5 real-root probes verified |
-| 3 | Package, export, tarball, artifact boundaries (master 1.2) | packet 3A done; 3B and 3C outstanding |
+| 3 | Package, export, tarball, artifact boundaries (master 1.2) | packets 3A and 3B done; 3C outstanding |
 | 4 | Diagnostics, strict I-JSON, terminal-safe output (master 1.3) | not started |
 | 5 | Byte-stable schemas and offline registry (master 1.4) | not started |
 | 6 | Config projection, Git URL v1, JCS, digests (master 1.5) | not started |
@@ -149,10 +153,9 @@ Found during execution and amended in `7230c03`:
 2. `cd` into the worktree above; do not `cd` into the main checkout.
 3. Confirm `git rev-parse HEAD` equals the approved base and `git status` shows only the files listed
    above.
-4. Continue at Task 3 packet 3B (master 1.2): `scripts/check-package-contents.mjs` — private staging
-   root, isolated build, `pnpm pack` under a frozen environment, and the bounded gzip/tar parser.
-   Then packet 3C: `scripts/check-stage1-artifacts.mjs`, `tests/security/artifact-scan.spec.ts`, and
-   the two fixture files.
+4. Continue at Task 3 packet 3C (master 1.2): `scripts/check-stage1-artifacts.mjs`,
+   `tests/security/artifact-scan.spec.ts`, `tests/fixtures/artifact-scan/vectors.json`, and
+   `tests/fixtures/stage1-artifact-policy.json`.
 
 ### Task 3 notes
 
@@ -170,6 +173,29 @@ Packet 3A (done):
   `['pack.json','rules','skills','README.md','LICENSE']`, no bin, dependency, script, or code export
 - root `LICENSE` copied byte-identically to `packages/ai-tooling/LICENSE` and `configs/ai/LICENSE`
   (all three SHA-256 `35d8a4e9e51206c6f19d1c3ce906115c1927386ad25e700d9e17362ab3a0fb6d`)
+
+Packet 3B (done) — `scripts/check-package-contents.mjs`:
+
+- private owner-only staging root; TypeScript compiled into it with an explicit `--outDir`, so the
+  working `dist/` is never an input
+- only `package.json`, `README.md`, `LICENSE`, and schema bytes copied in
+- `pnpm pack` launched as `process.execPath <corepack pnpm.cjs> pack --json --pack-destination <dir>`,
+  `shell: false`, no stdin, staging cwd, 300 s deadline, 64 MiB stdout cap, private HOME/cache/store,
+  `npm_config_ignore_scripts` and `npm_config_ignore_pnpmfile`
+- pnpm entry resolved from the corepack cache for the exact version pinned in root `packageManager`
+- bounded gzip reader: single member, flag validation, 4 KiB optional-header cap, data CRC and ISIZE
+  verified, 64 MiB compressed / 256 MiB inflated caps
+- bounded tar reader: octal-only numeric fields, header checksum verified, zero-filled padding
+  required, exact two-block end marker with no trailing data, and rejection of links, devices, FIFOs,
+  global and GNU headers, chained PAX overrides, absolute or `..` paths, and duplicate paths
+
+Verified: the archive contains exactly `package/LICENSE`, `package/README.md`, `package/package.json`,
+and the four `package/dist/*` build outputs. The stale-artifact test writes `dist/stale.js` and a fake
+native helper into the working tree and confirms neither reaches the tarball.
+
+Plan defect 12, amended in `db67234`: packet 3B specified argv
+`--ignore-scripts --ignore-pnpmfile pack ...`, but `pnpm pack` 10.28.0 rejects both with
+`Unknown options`. The frozen environment carries the suppression instead.
 
 Note: `test:unit` is now the exact planned script and names `tests/security`, which packet 3C creates.
 Until then run suites explicitly (`vitest run tests/unit tests/integration tests/package`) rather than
