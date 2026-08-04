@@ -8,7 +8,8 @@ fail the manifest gate.
 ## Current position
 
 - **Phase:** 1 (contracts and instruction-only pack)
-- **Task:** 1 and 2 of 9 complete. Task 3 in progress: packets 3A and 3B done, packet 3C outstanding.
+- **Task:** 1, 2 and 3 of 9 complete; next is Task 4 (diagnostics, strict I-JSON, terminal-safe
+  output, master 1.3)
 
 Note on the base: the worktree stays at `7230c03`. Plan amendments made after execution began
 (`db67234`) live on the plan branch only; they change prose, never a manifest, so the single Phase 1
@@ -37,7 +38,7 @@ Do not fast-forward the worktree onto later documentation commits; the Phase 1 c
 | Entry snapshot | baseline binding + toolchain assertions | done |
 | 1 | Bootstrap harness and phase-delta verifier (master 1.0) | done — 31 tests green, typecheck clean |
 | 2 | Repository-local state boundary (master 1.1) | done — 5 real-root probes verified |
-| 3 | Package, export, tarball, artifact boundaries (master 1.2) | packets 3A and 3B done; 3C outstanding |
+| 3 | Package, export, tarball, artifact boundaries (master 1.2) | done — all three packets |
 | 4 | Diagnostics, strict I-JSON, terminal-safe output (master 1.3) | not started |
 | 5 | Byte-stable schemas and offline registry (master 1.4) | not started |
 | 6 | Config projection, Git URL v1, JCS, digests (master 1.5) | not started |
@@ -153,9 +154,8 @@ Found during execution and amended in `7230c03`:
 2. `cd` into the worktree above; do not `cd` into the main checkout.
 3. Confirm `git rev-parse HEAD` equals the approved base and `git status` shows only the files listed
    above.
-4. Continue at Task 3 packet 3C (master 1.2): `scripts/check-stage1-artifacts.mjs`,
-   `tests/security/artifact-scan.spec.ts`, `tests/fixtures/artifact-scan/vectors.json`, and
-   `tests/fixtures/stage1-artifact-policy.json`.
+4. Continue at Task 4 (master 1.3): the closed 19-member `DIAGNOSTIC_CODES` registry, `ToolingError`,
+   strict I-JSON parsing, terminal-safe streaming, and the seven JSON fixtures.
 
 ### Task 3 notes
 
@@ -197,9 +197,25 @@ Plan defect 12, amended in `db67234`: packet 3B specified argv
 `--ignore-scripts --ignore-pnpmfile pack ...`, but `pnpm pack` 10.28.0 rejects both with
 `Unknown options`. The frozen environment carries the suppression instead.
 
-Note: `test:unit` is now the exact planned script and names `tests/security`, which packet 3C creates.
-Until then run suites explicitly (`vitest run tests/unit tests/integration tests/package`) rather than
-`pnpm run test`.
+Packet 3C (done) — `scripts/check-stage1-artifacts.mjs`:
 
-33 tests pass across 3 files; `typecheck` exits 0; the verifier now reports
-`missing path: configs/ai/README.md`, which is Task 8 work.
+- streaming Knuth-Morris-Pratt matcher (`PrivateMarkerStream`) finds a token that spans arbitrary
+  chunk boundaries; counting and hashing continue after a match so size and digest checks still fail
+  closed
+- the forgotten-stub sentinel is assembled from bytes and decoded with fatal UTF-8 at runtime; its
+  printable form is absent from the scanner source, the JSON policy, the test source, and every
+  diagnostic
+- findings carry only a relative path and a closed finding class, never matched bytes
+- `--tree` mode prefers `git ls-files --cached --others --exclude-standard`, so ignored build caches
+  such as `*.tsbuildinfo` are never scanned; it falls back to a filesystem walk for non-repository
+  fixtures
+- the policy document is exempt from its own `credentialPrefixes` matching, since it necessarily
+  contains every prefix it declares; literal-token matching still applies to it
+- vectors cover exact body, every split position, prefix-only, suffix-only, altered first and last
+  byte, duplicate body, LF suffix, literal backslash-n suffix, and empty body
+
+Verified on the real tree: `--phase 1 --tree` exits 0 and prints a content digest.
+
+45 tests pass across the unit, package and security suites, plus the integration suite; `typecheck`
+and the full `pnpm run test` both exit 0. The verifier reports `missing path: configs/ai/README.md`,
+which is Task 8 work.
