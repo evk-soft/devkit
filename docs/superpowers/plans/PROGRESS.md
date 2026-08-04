@@ -1,29 +1,23 @@
 # Stage 1 execution progress
 
 Working log for the Stage 1 implementation plan. Update this file **only on the plan branch**
-(`codex/ai-tooling-design`), never inside a phase execution worktree: phase manifests list the exact
-paths a phase may change, and this file is not one of them, so editing it inside the worktree would
-fail the manifest gate.
+(`codex/ai-tooling-design`), never inside a phase execution worktree.
 
 ## Current position
 
-- **Phase:** 1 (contracts and instruction-only pack)
-- **Task:** 1 through 8 of 9 complete. Only Task 9 remains: the final gate, exact staging, the sole
-  Phase 1 commit, and the owner stop.
-- **The phase-delta verifier now exits 0**: `node packages/ai-tooling/scripts/verify-phase-delta.mjs
-  --phase 1 --worktree` reports the worktree matches all 75 manifest paths exactly.
+**Phase 1 is complete and awaiting owner approval.**
 
-Note on the base: the worktree stays at `7230c03`. Plan amendments made after execution began
-(`db67234`) live on the plan branch only; they change prose, never a manifest, so the single Phase 1
-commit still takes `7230c03` as its only parent. Reconcile the branches after the phase is approved.
-- **Execution worktree:** `D:/disk.w/Projects/evk-soft/devkit-worktrees/ai-tooling-stage-1-phase-1`
-- **Worktree branch:** `ai-tooling/stage-1-phase-1`
-- **Approved base for Phase 1:** `7230c03` (`docs(ai): amend Phase 1 packet 1A/1B literals`)
-- **Phase commit:** not created yet. Phase 1 makes exactly one commit, in Task 9.
+- **Phase 1 commit:** `ec88ca3` `feat(ai): establish Stage 1 contracts` — 76 files, sole parent
+  `b3ec1b2`
+- **Execution worktree:** `D:/disk.w/Projects/evk-soft/devkit-worktrees/ai-tooling-stage-1-phase-1`,
+  branch `ai-tooling/stage-1-phase-1`, clean
+- **Approved base:** `b3ec1b2`
+- **Next action: owner review.** Phase 2 is not authorized until the owner approves this commit.
 
-The worktree intentionally stays on the approved base while this file moves ahead on the plan branch.
-Do not fast-forward the worktree onto later documentation commits; the Phase 1 commit must keep
-`7230c03` as its only parent.
+Gate evidence, all exit 0 against the committed tree: `typecheck`, `test:unit`, `test:integration`,
+`build`, `pack:check`, `check-stage1-artifacts.mjs --phase 1 --tree`, `pnpm check`,
+`git diff --check`, and `verify-phase-delta.mjs --phase 1 --base b3ec1b2 --commit ec88ca3`.
+128 tests pass.
 
 ## Preparation commits (plan branch)
 
@@ -46,7 +40,7 @@ Do not fast-forward the worktree onto later documentation commits; the Phase 1 c
 | 6 | Config projection, Git URL v1, JCS, digests (master 1.5) | done — 26 tests green |
 | 7 | Generated JSON and pack build bytes (master 1.6) | done — 9 tests green |
 | 8 | Minimal public pack (master 1.7) | done — 3 core-pack tests green |
-| 9 | Final gate, exact staging, sole commit, owner stop | not started |
+| 9 | Final gate, exact staging, sole commit, owner stop | done — commit `ec88ca3`, stopped for approval |
 
 ### Task 1 packet detail
 
