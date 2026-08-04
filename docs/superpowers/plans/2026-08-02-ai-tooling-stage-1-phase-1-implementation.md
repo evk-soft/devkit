@@ -80,6 +80,7 @@ The committed manifest `docs/superpowers/plans/manifests/ai-tooling-stage-1-phas
 
 ```text
 M 100644 .gitignore
+M 100644 biome.json
 A 100644 configs/ai/LICENSE
 M 100644 configs/ai/README.md
 A 100644 configs/ai/pack.json
@@ -616,6 +617,7 @@ Write `packages/ai-tooling/README.md` with package purpose, source-build/unpubli
 **Files:**
 
 - Modify: `.gitignore`
+- Modify: `biome.json`
 - Create: `packages/ai-tooling/tests/integration/repository-ignore.spec.ts`
 - Create: `packages/ai-tooling/tests/helpers/temp-repository.ts`
 
@@ -674,6 +676,13 @@ Run: `pnpm --filter @evk-soft/ai-tooling exec vitest run tests/integration/repos
 Expected RED: exit `1`; the named test fails because `.ai-tooling/state.json` is not ignored by the copied repository `.gitignore`.
 
 - [ ] **Step 3: make the one permitted repository-config change**
+
+Root `biome.json` gains the human-owned exclusion for `packages/ai-tooling/tests/fixtures/json/**`
+in this task. Those fixtures are deliberately invalid JSON — they exist to prove the strict parser
+rejects a byte-order mark, a comment, and a trailing comma — so `biome check .` cannot parse them and
+root `pnpm check` would fail from the moment they are committed. The exclusion therefore belongs to
+the phase that creates the fixtures. Phase 3 task 3.10 still owns the remaining formatter-boundary
+exclusions and keeps `biome.json` in its own manifest.
 
 Append exactly these two LF-terminated lines to root `.gitignore`:
 

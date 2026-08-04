@@ -1,4 +1,5 @@
 M 100644 .gitignore
+M 100644 biome.json
 A 100644 configs/ai/LICENSE
 M 100644 configs/ai/README.md
 A 100644 configs/ai/pack.json
