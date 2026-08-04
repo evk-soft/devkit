@@ -8,8 +8,8 @@ fail the manifest gate.
 ## Current position
 
 - **Phase:** 1 (contracts and instruction-only pack)
-- **Task:** 1, 2 and 3 of 9 complete; next is Task 4 (diagnostics, strict I-JSON, terminal-safe
-  output, master 1.3)
+- **Task:** 1, 2 and 3 of 9 complete. Task 4 in progress: packets 4A and 4B done, packet 4C
+  (terminal-safe streaming) outstanding.
 
 Note on the base: the worktree stays at `7230c03`. Plan amendments made after execution began
 (`db67234`) live on the plan branch only; they change prose, never a manifest, so the single Phase 1
@@ -39,7 +39,7 @@ Do not fast-forward the worktree onto later documentation commits; the Phase 1 c
 | 1 | Bootstrap harness and phase-delta verifier (master 1.0) | done — 31 tests green, typecheck clean |
 | 2 | Repository-local state boundary (master 1.1) | done — 5 real-root probes verified |
 | 3 | Package, export, tarball, artifact boundaries (master 1.2) | done — all three packets |
-| 4 | Diagnostics, strict I-JSON, terminal-safe output (master 1.3) | not started |
+| 4 | Diagnostics, strict I-JSON, terminal-safe output (master 1.3) | packets 4A and 4B done; 4C outstanding |
 | 5 | Byte-stable schemas and offline registry (master 1.4) | not started |
 | 6 | Config projection, Git URL v1, JCS, digests (master 1.5) | not started |
 | 7 | Generated JSON and pack build bytes (master 1.6) | not started |
@@ -154,8 +154,37 @@ Found during execution and amended in `7230c03`:
 2. `cd` into the worktree above; do not `cd` into the main checkout.
 3. Confirm `git rev-parse HEAD` equals the approved base and `git status` shows only the files listed
    above.
-4. Continue at Task 4 (master 1.3): the closed 19-member `DIAGNOSTIC_CODES` registry, `ToolingError`,
-   strict I-JSON parsing, terminal-safe streaming, and the seven JSON fixtures.
+4. Continue at Task 4 packet 4C (master 1.3): `src/diagnostics/terminal-safe.ts`,
+   `src/diagnostics/json.ts`, and `tests/unit/terminal-safe.spec.ts`.
+
+### Task 4 notes
+
+Packet 4A (done): `src/diagnostics/codes.ts` holds the closed nineteen-member `DIAGNOSTIC_CODES`
+literal plus `ENCODING_INVALID_REASONS`; `src/diagnostics/error.ts` holds `Diagnostic`,
+`ToolingError`, and the `toolingError` factory; `src/model/types.ts` holds `JsonValue` and
+`RedactedSource`. No code is synthesized at runtime.
+
+Packet 4B (done): `src/json/strict-json.ts` exports `parseStrictJson(bytes, source)` returning a
+branded `StrictJsonDocument` that cannot be constructed outside the module. It rejects a UTF-8 BOM,
+malformed UTF-8, empty input, comments, trailing commas, trailing tokens, decoded duplicate keys,
+lone surrogates in keys and strings, and numbers that do not round-trip through IEEE-754 (verified by
+the plan's `decimalIdentity` canonicalizer, not by `Number.isSafeInteger`). Seven fixtures cover the
+rejection cases; `9007199254740992`, `1.0` and `0.1` are accepted.
+
+Two implementation traps worth remembering:
+
+- `jsonc-parser`'s `visit` takes ParseOptions as its **third** argument and has no errors-array
+  parameter. Passing an errors array third silently discards `disallowComments`, so comments were
+  accepted until every fault was routed through the `onError` callback instead.
+- the visitor's failure record is held in an object, not a bare `let`. TypeScript does not track
+  assignments made inside closures, so a bare binding narrows to `null` and the post-visit check
+  becomes unreachable — it failed the build with `Property 'reason' does not exist on type 'never'`.
+
+Outstanding in packet 4B: step 5's `@ts-expect-error` assertions need `ConfigV1`, which Task 6
+creates. Do them when `src/config/types.ts` exists.
+
+61 tests pass across the unit, package and security suites, plus the integration suite; `typecheck`
+and the full `pnpm run test` both exit 0.
 
 ### Task 3 notes
 
