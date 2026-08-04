@@ -8,8 +8,8 @@ fail the manifest gate.
 ## Current position
 
 - **Phase:** 1 (contracts and instruction-only pack)
-- **Task:** 1 through 4 of 9 complete; next is Task 5 (byte-stable schemas and the offline registry,
-  master 1.4)
+- **Task:** 1 through 4 of 9 complete. Task 5 in progress: the seven schema documents are authored;
+  the domain types, the offline registry, and its tests are outstanding.
 
 Note on the base: the worktree stays at `7230c03`. Plan amendments made after execution began
 (`db67234`) live on the plan branch only; they change prose, never a manifest, so the single Phase 1
@@ -40,7 +40,7 @@ Do not fast-forward the worktree onto later documentation commits; the Phase 1 c
 | 2 | Repository-local state boundary (master 1.1) | done — 5 real-root probes verified |
 | 3 | Package, export, tarball, artifact boundaries (master 1.2) | done — all three packets |
 | 4 | Diagnostics, strict I-JSON, terminal-safe output (master 1.3) | done — all three packets |
-| 5 | Byte-stable schemas and offline registry (master 1.4) | not started |
+| 5 | Byte-stable schemas and offline registry (master 1.4) | schemas authored; registry and types outstanding |
 | 6 | Config projection, Git URL v1, JCS, digests (master 1.5) | not started |
 | 7 | Generated JSON and pack build bytes (master 1.6) | not started |
 | 8 | Minimal public pack (master 1.7) | not started |
@@ -154,8 +154,39 @@ Found during execution and amended in `7230c03`:
 2. `cd` into the worktree above; do not `cd` into the main checkout.
 3. Confirm `git rev-parse HEAD` equals the approved base and `git status` shows only the files listed
    above.
-4. Continue at Task 5 (master 1.4): the seven byte-stable JSON Schema documents under
-   `packages/ai-tooling/schemas/` and the offline Ajv2020 registry with its byte-identity tests.
+4. Continue at Task 5, packet 5A step 3 remainder and packet 5B: `src/config/types.ts`,
+   `src/pack/types.ts`, `src/json/schema-registry.ts`, `tests/unit/schema-registry.spec.ts`,
+   `tests/fixtures/schemas/vectors.json`, and `tests/fixtures/schemas/unresolved-ref.schema.json`.
+
+### Task 5 notes
+
+Authored (packet 5A): all seven schema documents under `packages/ai-tooling/schemas/`. Each carries
+`$schema` draft 2020-12 and the exact tagged `$id`, is `type: object` with
+`additionalProperties: false`, ends with LF, contains no CR, and uses only local or sibling `$ref`
+values so validation resolves entirely offline. `tests/package/schema-bytes.spec.ts` asserts all of
+this plus the exact seven-document directory listing — 15 tests green.
+
+Design points worth keeping:
+
+- `config.schema.json` recognises exactly the local, npm and git source kinds. Its `gitUrl` pattern
+  admits only https `.git`, ssh `.git`, and scp-style `git@host:path.git`; a bare content URL such as
+  `https://example.invalid/pack.md` is rejected by the schema, before any provider or acquisition
+  call. `overrideDirectory` requires a strict descendant of the literal `ai/overrides` root, so the
+  root itself, absolute paths, dot and parent components, backslashes, drive letters, and UNC
+  prefixes all fail lexically.
+- `override.schema.json` allows only `extend`, `replace`, `disable`, and uses `if`/`then` so
+  `disable` may not carry an instructions file while the other two must.
+- `state.schema.json` is the frozen one: run lock with typed process owner and liveness provider,
+  journal header at sequence 0 whose digest covers the whole frame, frame types, the three terminal
+  outcomes, six-digit step spelling, backup and retained-preimage records, recovery handoff and
+  archive, and reports. Phases 2 through 5 consume it and must not modify it.
+
+Verified: the tarball now carries `package/schemas/*.json`, and the artifact scan still exits 0.
+
+Outstanding in Task 5: the handwritten `ConfigV1`/`PackV1`/`RuleV1`/`SkillV1`/`OverrideV1`/`LockV1`/
+`StateV1` types, `SchemaTypeMap`, the Ajv2020 offline registry (`strict: true`, `allErrors: true`,
+`validateFormats: false`, no `loadSchema`, all seven `$id`s preloaded before compiling any root), the
+no-network test, the typed-mapping assertions, and the two schema fixtures.
 
 ### Task 4 notes
 
