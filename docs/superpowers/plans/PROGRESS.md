@@ -8,8 +8,8 @@ fail the manifest gate.
 ## Current position
 
 - **Phase:** 1 (contracts and instruction-only pack)
-- **Task:** 1 through 6 of 9 complete; next is Task 7 (generated JSON and pack build bytes,
-  master 1.6)
+- **Task:** 1 through 7 of 9 complete; next is Task 8 (author and independently review the minimal
+  public pack, master 1.7)
 
 Note on the base: the worktree stays at `7230c03`. Plan amendments made after execution began
 (`db67234`) live on the plan branch only; they change prose, never a manifest, so the single Phase 1
@@ -42,7 +42,7 @@ Do not fast-forward the worktree onto later documentation commits; the Phase 1 c
 | 4 | Diagnostics, strict I-JSON, terminal-safe output (master 1.3) | done — all three packets |
 | 5 | Byte-stable schemas and offline registry (master 1.4) | done — 22 schema tests green |
 | 6 | Config projection, Git URL v1, JCS, digests (master 1.5) | done — 26 tests green |
-| 7 | Generated JSON and pack build bytes (master 1.6) | not started |
+| 7 | Generated JSON and pack build bytes (master 1.6) | done — 9 tests green |
 | 8 | Minimal public pack (master 1.7) | not started |
 | 9 | Final gate, exact staging, sole commit, owner stop | not started |
 
@@ -154,9 +154,36 @@ Found during execution and amended in `7230c03`:
 2. `cd` into the worktree above; do not `cd` into the main checkout.
 3. Confirm `git rev-parse HEAD` equals the approved base and `git status` shows only the files listed
    above.
-4. Continue at Task 7 (master 1.6): `src/json/render-json.ts`, `src/pack/types.ts` build additions,
-   `src/pack/build.ts`, `tests/unit/render-json.spec.ts`, `tests/integration/pack-build.spec.ts`,
-   and the render-json fixtures.
+4. Continue at Task 8 (master 1.7): author `configs/ai/pack.json`, the `evk-grounding` rule and
+   `evk-plan` skill with their instruction files, update `configs/ai/README.md`, add
+   `tests/integration/core-pack.spec.ts`, and write `docs/ai-tooling/EXTENDING-PACKS.md` and
+   `docs/ai-tooling/SECURITY.md`.
+
+### Task 7 notes
+
+`src/json/render-json.ts` renders validated JSON as the exact bytes a generated file will hold: keys
+in the supplied schema order rather than alphabetically, two-space indent, LF, no BOM, exactly one
+final LF, and no line folding. A key missing from the order is an error, never an append — otherwise
+a field could reach output that no ordering accounts for, and the bytes would depend on object
+construction order. It is not the canonicalizer and never calls JCS or a formatter.
+
+`src/pack/build.ts` exposes `validatePack` and `buildPack`. Reads go only through the injected
+`ReadOnlySourceContext` and its shared budget, and writes go only through an explicit
+`PackBuildDestination` whose methods are exclusive-create. The function holds no handle that could
+reach the repository, so "no repository writes" is structural rather than a rule to remember.
+Undeclared files in a resource directory and executable instruction files are rejected before any
+destination write. Instruction bytes are copied unchanged; metadata is re-rendered in schema order
+with the version-tagged `$schema`.
+
+`src/model/types.ts` gained the access contracts: branded `ContainedPathRef` (producible only by a
+gateway, so a raw absolute path is not representable), `RepositoryReadBudget`,
+`ReadOnlyRepositoryFilesystem`, and `ReadOnlySourceContext`.
+
+`src/commands/pack.ts` parses `validate` and `build` but returns
+`EVK_PACK_CAPABILITY_UNAVAILABLE` before any repository access, because the real source context
+arrives with Phase 2. Both functions stay fully usable through dependency injection.
+
+121 tests pass; `typecheck` and `pnpm run test` exit 0.
 
 ### Task 6 notes
 
