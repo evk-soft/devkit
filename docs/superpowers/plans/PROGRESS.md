@@ -8,8 +8,10 @@ fail the manifest gate.
 ## Current position
 
 - **Phase:** 1 (contracts and instruction-only pack)
-- **Task:** 1 through 7 of 9 complete; next is Task 8 (author and independently review the minimal
-  public pack, master 1.7)
+- **Task:** 1 through 8 of 9 complete. Only Task 9 remains: the final gate, exact staging, the sole
+  Phase 1 commit, and the owner stop.
+- **The phase-delta verifier now exits 0**: `node packages/ai-tooling/scripts/verify-phase-delta.mjs
+  --phase 1 --worktree` reports the worktree matches all 75 manifest paths exactly.
 
 Note on the base: the worktree stays at `7230c03`. Plan amendments made after execution began
 (`db67234`) live on the plan branch only; they change prose, never a manifest, so the single Phase 1
@@ -43,7 +45,7 @@ Do not fast-forward the worktree onto later documentation commits; the Phase 1 c
 | 5 | Byte-stable schemas and offline registry (master 1.4) | done — 22 schema tests green |
 | 6 | Config projection, Git URL v1, JCS, digests (master 1.5) | done — 26 tests green |
 | 7 | Generated JSON and pack build bytes (master 1.6) | done — 9 tests green |
-| 8 | Minimal public pack (master 1.7) | not started |
+| 8 | Minimal public pack (master 1.7) | done — 3 core-pack tests green |
 | 9 | Final gate, exact staging, sole commit, owner stop | not started |
 
 ### Task 1 packet detail
@@ -154,10 +156,43 @@ Found during execution and amended in `7230c03`:
 2. `cd` into the worktree above; do not `cd` into the main checkout.
 3. Confirm `git rev-parse HEAD` equals the approved base and `git status` shows only the files listed
    above.
-4. Continue at Task 8 (master 1.7): author `configs/ai/pack.json`, the `evk-grounding` rule and
-   `evk-plan` skill with their instruction files, update `configs/ai/README.md`, add
-   `tests/integration/core-pack.spec.ts`, and write `docs/ai-tooling/EXTENDING-PACKS.md` and
-   `docs/ai-tooling/SECURITY.md`.
+4. Continue at Task 9 (the phase gate). Read its steps in full before acting: it runs the complete
+   local gate, then the exact hook formatter command (`pnpm -s exec biome check --write .`) followed
+   by a manifest-scoped worktree check, stages exactly the 75 manifest paths with one explicit
+   `git add --` per path, runs the cached verifier and artifact scan, creates the single commit
+   `feat(ai): establish Stage 1 contracts` with `--no-verify`, re-verifies the committed delta
+   against `$approvedBaseSha`, and then **stops for owner approval**. Never run the hook's
+   `git add -A`.
+
+### Task 8 notes
+
+The canonical pack ships exactly two instruction-only resources: the `evk-grounding` rule
+(`evk-soft/rules/grounding`) and the `evk-plan` skill (`evk-soft/skills/plan`). Instruction bodies are
+the plan's literal text. `tests/integration/core-pack.spec.ts` validates the real pack through the
+offline registry, asserts the exact resource list and that every `requiredCapabilities` entry is
+`instructions.markdown`, inventories every shipped file for executable-surface signals (shebang,
+scripts, hooks, MCP servers, bin, plugins) and requires the signal list to be empty, and checks that
+each resource directory contains only its declared files.
+
+One contract correction: Task 5 left the capability field name unspecified, so the schemas initially
+used `capabilities` with the value `instructions`. Task 8 fixes both — the field is
+`requiredCapabilities` and the value is `instructions.markdown`. The rule and skill schemas and
+`PackCapability` were updated to match.
+
+Documentation written: `docs/ai-tooling/SECURITY.md` (what a pack may contain, the trust boundaries,
+and the explicit statement that Stage 1 protects integrity and containment but makes no
+confidentiality claim against a principal who can already read the checkout),
+`docs/ai-tooling/EXTENDING-PACKS.md` (how to add a resource and how to customize through
+`ai/overrides/**` rather than forking, including why `baseDigest` exists), a rewritten
+`configs/ai/README.md`, and a delivery-status section in `docs/system-overview/ai-tooling.md` that
+separates delivered guarantees from planned ones.
+
+Also created the four fixture files the manifest requires but earlier tasks had not written:
+`tests/fixtures/rfc8785/vectors.json`, `tests/fixtures/config-digest/vectors.json`, and
+`tests/fixtures/render-json/{vectors,expected}.json`.
+
+124 tests pass; `typecheck`, `pnpm run test`, the artifact scan, and the phase-delta verifier all
+exit 0.
 
 ### Task 7 notes
 
