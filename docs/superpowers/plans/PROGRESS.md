@@ -8,8 +8,8 @@ fail the manifest gate.
 ## Current position
 
 - **Phase:** 1 (contracts and instruction-only pack)
-- **Task:** 1 through 5 of 9 complete; next is Task 6 (configuration projection, Git URL v1, JCS and
-  digests, master 1.5)
+- **Task:** 1 through 6 of 9 complete; next is Task 7 (generated JSON and pack build bytes,
+  master 1.6)
 
 Note on the base: the worktree stays at `7230c03`. Plan amendments made after execution began
 (`db67234`) live on the plan branch only; they change prose, never a manifest, so the single Phase 1
@@ -41,7 +41,7 @@ Do not fast-forward the worktree onto later documentation commits; the Phase 1 c
 | 3 | Package, export, tarball, artifact boundaries (master 1.2) | done — all three packets |
 | 4 | Diagnostics, strict I-JSON, terminal-safe output (master 1.3) | done — all three packets |
 | 5 | Byte-stable schemas and offline registry (master 1.4) | done — 22 schema tests green |
-| 6 | Config projection, Git URL v1, JCS, digests (master 1.5) | not started |
+| 6 | Config projection, Git URL v1, JCS, digests (master 1.5) | done — 26 tests green |
 | 7 | Generated JSON and pack build bytes (master 1.6) | not started |
 | 8 | Minimal public pack (master 1.7) | not started |
 | 9 | Final gate, exact staging, sole commit, owner stop | not started |
@@ -154,8 +154,34 @@ Found during execution and amended in `7230c03`:
 2. `cd` into the worktree above; do not `cd` into the main checkout.
 3. Confirm `git rev-parse HEAD` equals the approved base and `git status` shows only the files listed
    above.
-4. Continue at Task 6 (master 1.5): configuration projection, Git URL v1 normalization, RFC 8785 JCS
-   canonicalization, and configuration digests, with their vector fixtures.
+4. Continue at Task 7 (master 1.6): `src/json/render-json.ts`, `src/pack/types.ts` build additions,
+   `src/pack/build.ts`, `tests/unit/render-json.spec.ts`, `tests/integration/pack-build.spec.ts`,
+   and the render-json fixtures.
+
+### Task 6 notes
+
+`src/config/git-url-v1.ts` lexes ASCII bytes directly. The runtime `URL` parser, `URLSearchParams`,
+IDNA/UTS-46, and Unicode normalization are all unused on purpose: their behaviour varies between
+runtime versions, and this output feeds a digest that must be identical everywhere. It rejects
+non-https schemes, userinfo, query, fragment, non-ASCII or percent-encoded hosts, bracketed IPs,
+numeric-only hosts, non-canonical ports, backslashes, and surrounding whitespace; it folds scheme and
+host to lower case, drops only port 443, decodes only RFC 3986 unreserved triplets, uppercases every
+retained triplet, and removes dot segments. Proven idempotent.
+
+`src/json/jcs.ts` wraps `canonicalizeEx` exactly as the plan specifies and hashes only those bytes.
+A regression test asserts that a decomposed `e` plus combining acute and a precomposed acute produce
+**different** bytes: canonicalization orders and spells, it must never fold Unicode, or two distinct
+documents would collapse into one digest.
+
+`src/config/projection.ts` materializes every literal default, so an omitted property and an
+explicitly written default hash identically. `packSelectionProjectionV1` deliberately excludes
+platforms, output mode, hooks and plugins — that is what later lets `EVK_CONFIG_REQUIRES_UPDATE`
+distinguish "same packs, rendered differently" from "different packs". A test asserts exactly that
+asymmetry.
+
+One correction worth remembering: RFC 8785 numbers use the ES6 shortest round-trip form, so
+`0.000001` stays decimal and exponential spelling only begins at `1e-7`. An early expectation of
+`1e-6` was my error, not the library's.
 
 ### Task 5 notes
 
