@@ -1,0 +1,10 @@
+{
+  "description": "Exact expected bytes for each rendering vector, written as a string so a byte change is visible in review. Two-space indent, LF, no BOM, exactly one final LF.",
+  "expected": {
+    "schema order wins over authored order": "{\n  \"schemaVersion\": 1,\n  \"nested\": {\n    \"a\": null,\n    \"b\": true\n  }\n}\n",
+    "empty containers": "{\n  \"a\": [],\n  \"b\": {}\n}\n",
+    "array items are one per line": "{\n  \"a\": [\n    1,\n    2\n  ]\n}\n",
+    "long strings are never folded": "{\n  \"a\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\"\n}\n",
+    "only JSON-required escapes are applied": "{\n  \"a\": \"quote:\\\" backslash:\\\\ tab:\\t\"\n}\n"
+  }
+}

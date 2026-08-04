@@ -1,0 +1,9 @@
+{
+  "name": "evk",
+  "count": 1,
+  "ratio": 0.1,
+  "exact": 9007199254740992,
+  "flag": true,
+  "nothing": null,
+  "list": [1, 2]
+}

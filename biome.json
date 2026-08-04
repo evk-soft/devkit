@@ -1,4 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.6/schema.json",
-  "extends": ["./configs/biome-config/biome.preset.json"]
+  "extends": ["./configs/biome-config/biome.preset.json"],
+  "files": {
+    "includes": ["**", "!packages/ai-tooling/tests/fixtures/json"]
+  }
 }

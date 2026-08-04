@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/evk-soft/devkit/refs/tags/ai-tooling-v0.1.0/packages/ai-tooling/schemas/state.schema.json",
+  "title": "EVK AI tooling repository-local state, version 1",
+  "description": "Frozen at version 1. Phases 2 through 5 consume these definitions and must not modify this document, StateV1, the registry map, or the assignability-test bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version"],
+  "properties": {
+    "version": { "const": 1 },
+    "runLock": { "$ref": "#/$defs/runLock" },
+    "journal": { "$ref": "#/$defs/journal" },
+    "backups": {
+      "type": "array",
+      "default": [],
+      "uniqueItems": true,
+      "maxItems": 100000,
+      "items": { "$ref": "#/$defs/backupRecord" }
+    },
+    "recovery": { "$ref": "#/$defs/recovery" },
+    "reports": {
+      "type": "array",
+      "default": [],
+      "uniqueItems": true,
+      "maxItems": 100000,
+      "items": { "$ref": "#/$defs/report" }
+    }
+  },
+  "$defs": {
+    "sha256Hex": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "uuidV4": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "nonce": {
+      "description": "32 random bytes rendered as 43 unpadded base64url characters.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{43}$"
+    },
+    "stepNumber": {
+      "description": "A one-based transaction step, always spelled as exactly six decimal digits.",
+      "type": "string",
+      "pattern": "^[0-9]{6}$"
+    },
+    "repositoryPath": {
+      "type": "string",
+      "pattern": "^(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+(?:/(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+)*$",
+      "maxLength": 1024
+    },
+    "operation": {
+      "type": "string",
+      "enum": ["init", "sync", "refresh-local", "restore", "repair"]
+    },
+    "action": { "type": "string", "enum": ["forward", "rollback"] },
+    "livenessProvider": {
+      "type": "string",
+      "enum": ["linux-procfs-v1", "macos-ps-v1", "windows-native-v1"]
+    },
+    "runLock": {
+      "description": "The single authority for a mutating run. Its bytes are untrusted until strict parsing and canonical-byte equality succeed; only then is liveness consulted.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "operationId", "nonce", "operation", "action", "generation", "owner"],
+      "properties": {
+        "version": { "const": 1 },
+        "operationId": { "$ref": "#/$defs/uuidV4" },
+        "nonce": { "$ref": "#/$defs/nonce" },
+        "operation": { "$ref": "#/$defs/operation" },
+        "action": { "$ref": "#/$defs/action" },
+        "generation": { "type": "integer", "minimum": 0, "maximum": 100000 },
+        "owner": { "$ref": "#/$defs/processOwner" }
+      }
+    },
+    "processOwner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "pid", "startMarker", "provider"],
+      "properties": {
+        "host": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "pid": { "type": "integer", "minimum": 1, "maximum": 4294967295 },
+        "startMarker": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "provider": { "$ref": "#/$defs/livenessProvider" }
+      }
+    },
+    "journal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "operationId", "nonce", "operation", "header", "frames"],
+      "properties": {
+        "version": { "const": 1 },
+        "operationId": { "$ref": "#/$defs/uuidV4" },
+        "nonce": { "$ref": "#/$defs/nonce" },
+        "operation": { "$ref": "#/$defs/operation" },
+        "header": { "$ref": "#/$defs/journalHeader" },
+        "frames": {
+          "type": "array",
+          "maxItems": 100000,
+          "items": { "$ref": "#/$defs/journalFrame" }
+        },
+        "terminal": { "$ref": "#/$defs/terminalOutcome" }
+      }
+    },
+    "journalHeader": {
+      "description": "Sequence 0. Its SHA-256 covers the entire complete frame, not the payload alone.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "planDigest", "steps", "digest"],
+      "properties": {
+        "sequence": { "const": 0 },
+        "planDigest": { "$ref": "#/$defs/sha256Hex" },
+        "steps": {
+          "type": "array",
+          "maxItems": 100000,
+          "items": { "$ref": "#/$defs/plannedStep" }
+        },
+        "digest": { "$ref": "#/$defs/sha256Hex" }
+      }
+    },
+    "plannedStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "path", "intent"],
+      "properties": {
+        "step": { "$ref": "#/$defs/stepNumber" },
+        "path": { "$ref": "#/$defs/repositoryPath" },
+        "intent": {
+          "type": "string",
+          "enum": ["create-directory", "create-file", "replace-file", "delete-file", "write-lock"]
+        }
+      }
+    },
+    "journalFrame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "type", "step", "action", "digest"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 100000 },
+        "type": {
+          "type": "string",
+          "enum": ["intent", "applied", "backed-up", "retained", "verified"]
+        },
+        "step": { "$ref": "#/$defs/stepNumber" },
+        "action": { "$ref": "#/$defs/action" },
+        "digest": { "$ref": "#/$defs/sha256Hex" }
+      }
+    },
+    "terminalOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "digest"],
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "enum": ["committed", "rolled-back", "interrupted"]
+        },
+        "digest": { "$ref": "#/$defs/sha256Hex" }
+      }
+    },
+    "backupRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["managedPath", "retainedPath", "digest", "kind"],
+      "properties": {
+        "managedPath": { "$ref": "#/$defs/repositoryPath" },
+        "retainedPath": { "$ref": "#/$defs/repositoryPath" },
+        "stagingPath": { "$ref": "#/$defs/repositoryPath" },
+        "digest": { "$ref": "#/$defs/sha256Hex" },
+        "kind": { "type": "string", "enum": ["prior", "retained-preimage"] }
+      }
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state"],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": ["none", "recoverable", "blocked", "repaired"]
+        },
+        "handoff": { "$ref": "#/$defs/recoveryHandoff" },
+        "archive": { "$ref": "#/$defs/recoveryArchive" }
+      }
+    },
+    "recoveryHandoff": {
+      "description": "Only the embedded live successor owner may advance a published handoff.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operationId", "predecessor", "successor"],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/uuidV4" },
+        "predecessor": { "$ref": "#/$defs/processOwner" },
+        "successor": { "$ref": "#/$defs/processOwner" }
+      }
+    },
+    "recoveryArchive": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "digest"],
+      "properties": {
+        "path": { "$ref": "#/$defs/repositoryPath" },
+        "digest": { "$ref": "#/$defs/sha256Hex" }
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "operationId", "outcome"],
+      "properties": {
+        "path": { "$ref": "#/$defs/repositoryPath" },
+        "operationId": { "$ref": "#/$defs/uuidV4" },
+        "outcome": {
+          "type": "string",
+          "enum": ["committed", "rolled-back", "interrupted", "inspected"]
+        }
+      }
+    }
+  }
+}

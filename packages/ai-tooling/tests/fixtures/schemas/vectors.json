@@ -1,0 +1,177 @@
+{
+  "description": "Positive and negative validation vectors, one entry per schema root. Negative cases name the property that must fail so a regression cannot pass by rejecting for the wrong reason.",
+  "config": {
+    "invalid": [
+      {
+        "name": "unknown top-level property",
+        "document": {
+          "version": 1,
+          "sources": [{ "kind": "local", "path": "configs/ai" }],
+          "platforms": ["codex"],
+          "extra": true
+        }
+      },
+      {
+        "name": "empty source list",
+        "document": { "version": 1, "sources": [], "platforms": ["codex"] }
+      },
+      {
+        "name": "unknown platform",
+        "document": {
+          "version": 1,
+          "sources": [{ "kind": "local", "path": "configs/ai" }],
+          "platforms": ["emacs"]
+        }
+      },
+      {
+        "name": "unknown source kind",
+        "document": {
+          "version": 1,
+          "sources": [{ "kind": "http", "url": "https://example.invalid/x" }],
+          "platforms": ["codex"]
+        }
+      },
+      {
+        "name": "bare content URL as git source",
+        "document": {
+          "version": 1,
+          "sources": [
+            {
+              "kind": "git",
+              "url": "https://example.invalid/pack.md",
+              "commit": "0000000000000000000000000000000000000000"
+            }
+          ],
+          "platforms": ["codex"]
+        }
+      },
+      {
+        "name": "override root itself",
+        "document": {
+          "version": 1,
+          "sources": [{ "kind": "local", "path": "configs/ai" }],
+          "platforms": ["codex"],
+          "overrideDirectories": ["ai/overrides"]
+        }
+      },
+      {
+        "name": "output kind outside the closed union",
+        "document": {
+          "version": 1,
+          "sources": [{ "kind": "local", "path": "configs/ai" }],
+          "platforms": ["codex"],
+          "output": "adopted"
+        }
+      }
+    ]
+  },
+  "override": {
+    "invalid": [
+      {
+        "name": "disable carrying instructions",
+        "document": {
+          "version": 1,
+          "target": "evk-soft/rules/grounding",
+          "mode": "disable",
+          "baseDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "instructions": "instructions.md"
+        }
+      },
+      {
+        "name": "extend without instructions",
+        "document": {
+          "version": 1,
+          "target": "evk-soft/rules/grounding",
+          "mode": "extend",
+          "baseDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      {
+        "name": "mode outside the closed union",
+        "document": {
+          "version": 1,
+          "target": "evk-soft/rules/grounding",
+          "mode": "adopt",
+          "baseDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      {
+        "name": "short digest",
+        "document": {
+          "version": 1,
+          "target": "evk-soft/rules/grounding",
+          "mode": "replace",
+          "baseDigest": "abc",
+          "instructions": "instructions.md"
+        }
+      }
+    ]
+  },
+  "lock": {
+    "invalid": [
+      {
+        "name": "owner outside the closed union",
+        "document": {
+          "version": 1,
+          "configurationDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "selectionDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "packs": [],
+          "outputs": [
+            {
+              "path": "CLAUDE.md",
+              "platform": "claude-code",
+              "digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+              "owner": "adopted"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "state": {
+    "invalid": [
+      {
+        "name": "step not spelled with six digits",
+        "document": {
+          "version": 1,
+          "journal": {
+            "version": 1,
+            "operationId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+            "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "operation": "init",
+            "header": {
+              "sequence": 0,
+              "planDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "steps": [{ "step": "1", "path": "CLAUDE.md", "intent": "create-file" }],
+              "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "frames": []
+          }
+        }
+      },
+      {
+        "name": "terminal outcome outside the closed union",
+        "document": {
+          "version": 1,
+          "journal": {
+            "version": 1,
+            "operationId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+            "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "operation": "init",
+            "header": {
+              "sequence": 0,
+              "planDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "steps": [],
+              "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "frames": [],
+            "terminal": {
+              "outcome": "forced",
+              "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1698,3 +1698,30 @@ The product is conformant only when evidence proves all of these invariants:
     ancestor changes before an operation. A direct provider inside the repository passes the gateway;
     an external direct provider and installed Node-provider code are outside it only under the
     separate caller-explicit trust contract.
+
+## Delivery status
+
+The behavior above is the durable architecture. It is delivered in phases, and this section records
+what exists in the checkout today so a reader can tell a delivered guarantee from a planned one.
+
+Delivered:
+
+- the contract layer: closed diagnostic registry, strict I-JSON parsing ahead of schema validation,
+  and injective terminal-safe output that never emits a raw control or bidirectional override;
+- the seven version-1 JSON Schema documents, validated by an offline registry that registers every
+  schema before compiling any root and configures no dynamic loader, so an unresolved reference
+  fails locally rather than becoming a network request;
+- deterministic bytes: RFC 8785 canonicalization for digests, schema-ordered rendering for generated
+  files, and total configuration projections in which an omitted default and an explicitly written
+  default hash identically;
+- version-1 Git URL normalization lexed from ASCII without the runtime URL parser or IDNA, so one
+  logical source has one spelling on every machine;
+- pure pack validation and build, reading only through an injected read-only context and writing only
+  through an explicit destination port, so a repository write is not representable;
+- the instruction-only canonical pack: the `evk-grounding` rule and the `evk-plan` skill;
+- the publishable package boundary, proven by building into a private staging root and parsing the
+  resulting archive with a bounded gzip and tar reader, plus a fail-closed artifact scanner.
+
+Not yet delivered, and not to be inferred from this document: platform adapters and generated project
+outputs, the repository lock, every mutation command and its journal, recovery and repair, formatter
+integration, remote acquisition, caching, adoption, hooks, and plugins.

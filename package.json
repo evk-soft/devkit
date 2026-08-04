@@ -19,7 +19,8 @@
     ]
   },
   "scripts": {
-    "check": "pnpm run check:biome && pnpm run check:runtime",
+    "check": "pnpm run check:biome && pnpm run check:runtime && pnpm run check:ai-tooling",
+    "check:ai-tooling": "pnpm --filter @evk-soft/ai-tooling run check",
     "check:biome": "biome check .",
     "check:runtime": "node ./scripts/runtime-check.mjs",
     "format": "biome format --write .",

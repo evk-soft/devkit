@@ -1,0 +1,17 @@
+{
+  "credentialPrefixes": [
+    "-----BEGIN OPENSSH PRIVATE KEY-----",
+    "-----BEGIN RSA PRIVATE KEY-----",
+    "-----BEGIN PRIVATE KEY-----",
+    "-----BEGIN PGP PRIVATE KEY BLOCK-----",
+    "aws_secret_access_key",
+    "npm_authToken",
+    "ghp_",
+    "github_pat_",
+    "xoxb-",
+    "sk-"
+  ],
+  "forbiddenLiteralTokens": [],
+  "allowedExecutablePaths": [],
+  "requiredLicenseDigests": ["35d8a4e9e51206c6f19d1c3ce906115c1927386ad25e700d9e17362ab3a0fb6d"]
+}

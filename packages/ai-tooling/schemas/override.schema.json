@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/evk-soft/devkit/refs/tags/ai-tooling-v0.1.0/packages/ai-tooling/schemas/override.schema.json",
+  "title": "EVK AI project override, version 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "target", "mode", "baseDigest"],
+  "properties": {
+    "version": { "const": 1 },
+    "target": { "$ref": "#/$defs/resourceId" },
+    "mode": {
+      "type": "string",
+      "enum": ["extend", "replace", "disable"]
+    },
+    "baseDigest": { "$ref": "#/$defs/sha256Hex" },
+    "instructions": { "$ref": "#/$defs/relativeFile" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "mode": { "enum": ["extend", "replace"] } }, "required": ["mode"] },
+      "then": {
+        "properties": { "instructions": { "$ref": "#/$defs/relativeFile" } },
+        "required": ["instructions"]
+      }
+    },
+    {
+      "if": { "properties": { "mode": { "const": "disable" } }, "required": ["mode"] },
+      "then": {
+        "not": {
+          "properties": { "instructions": { "$ref": "#/$defs/relativeFile" } },
+          "required": ["instructions"]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "resourceId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+      "maxLength": 256
+    },
+    "sha256Hex": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "relativeFile": {
+      "type": "string",
+      "pattern": "^(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+(?:/(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+)*$",
+      "maxLength": 1024
+    }
+  }
+}

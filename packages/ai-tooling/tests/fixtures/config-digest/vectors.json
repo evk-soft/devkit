@@ -1,0 +1,95 @@
+{
+  "description": "Configuration projection vectors. Equivalent configurations must share a digest; materially different ones must not. Selection vectors additionally record whether the pack-selection digest is expected to move.",
+  "equivalent": [
+    {
+      "name": "omitted defaults equal written defaults",
+      "left": {
+        "version": 1,
+        "sources": [{ "kind": "local", "path": "configs/ai" }],
+        "platforms": ["claude-code"]
+      },
+      "right": {
+        "version": 1,
+        "sources": [{ "kind": "local", "path": "configs/ai" }],
+        "platforms": ["claude-code"],
+        "output": "managed",
+        "overrideDirectories": [],
+        "hooks": { "install": false, "preCommit": false },
+        "plugins": { "profile": "none", "recommendations": [] }
+      }
+    },
+    {
+      "name": "equivalent git URL spellings",
+      "left": {
+        "version": 1,
+        "sources": [
+          {
+            "kind": "git",
+            "url": "HTTPS://EXAMPLE.COM:443/a/./b/../repo.git",
+            "commit": "0000000000000000000000000000000000000000"
+          }
+        ],
+        "platforms": ["codex"]
+      },
+      "right": {
+        "version": 1,
+        "sources": [
+          {
+            "kind": "git",
+            "url": "https://example.com/a/repo.git",
+            "commit": "0000000000000000000000000000000000000000"
+          }
+        ],
+        "platforms": ["codex"]
+      }
+    }
+  ],
+  "distinct": [
+    {
+      "name": "different platform changes configuration but not selection",
+      "left": {
+        "version": 1,
+        "sources": [{ "kind": "local", "path": "configs/ai" }],
+        "platforms": ["claude-code"]
+      },
+      "right": {
+        "version": 1,
+        "sources": [{ "kind": "local", "path": "configs/ai" }],
+        "platforms": ["codex"]
+      },
+      "configurationDigestDiffers": true,
+      "selectionDigestDiffers": false
+    },
+    {
+      "name": "different source changes both digests",
+      "left": {
+        "version": 1,
+        "sources": [{ "kind": "local", "path": "configs/ai" }],
+        "platforms": ["codex"]
+      },
+      "right": {
+        "version": 1,
+        "sources": [{ "kind": "npm", "name": "@evk-soft/ai-pack-core", "version": "0.1.0" }],
+        "platforms": ["codex"]
+      },
+      "configurationDigestDiffers": true,
+      "selectionDigestDiffers": true
+    },
+    {
+      "name": "output mode changes configuration but not selection",
+      "left": {
+        "version": 1,
+        "sources": [{ "kind": "local", "path": "configs/ai" }],
+        "platforms": ["codex"]
+      },
+      "right": {
+        "version": 1,
+        "sources": [{ "kind": "local", "path": "configs/ai" }],
+        "platforms": ["codex"],
+        "output": "preview"
+      },
+      "configurationDigestDiffers": true,
+      "selectionDigestDiffers": false
+    }
+  ]
+}

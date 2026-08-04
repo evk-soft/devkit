@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "id": "evk-soft/rules/grounding",
+  "title": "evk-grounding",
+  "description": "Ground every change in the repository's own instructions, files, and version-control state.",
+  "instructions": "instructions.md",
+  "requiredCapabilities": ["instructions.markdown"],
+  "assets": []
+}

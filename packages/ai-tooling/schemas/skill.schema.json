@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/evk-soft/devkit/refs/tags/ai-tooling-v0.1.0/packages/ai-tooling/schemas/skill.schema.json",
+  "title": "EVK AI skill, version 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "id", "title", "description", "instructions"],
+  "properties": {
+    "version": { "const": 1 },
+    "id": { "$ref": "#/$defs/resourceId" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "description": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "instructions": { "$ref": "#/$defs/relativeFile" },
+    "requiredCapabilities": {
+      "type": "array",
+      "default": [],
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/capability" }
+    },
+    "assets": {
+      "type": "array",
+      "default": [],
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/relativeFile" }
+    }
+  },
+  "$defs": {
+    "resourceId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+      "maxLength": 256
+    },
+    "relativeFile": {
+      "type": "string",
+      "pattern": "^(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+(?:/(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+)*$",
+      "maxLength": 1024
+    },
+    "capability": {
+      "type": "string",
+      "enum": ["instructions.markdown"]
+    }
+  }
+}

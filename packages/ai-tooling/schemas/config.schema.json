@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/evk-soft/devkit/refs/tags/ai-tooling-v0.1.0/packages/ai-tooling/schemas/config.schema.json",
+  "title": "EVK AI tooling project configuration, version 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "sources", "platforms"],
+  "properties": {
+    "version": { "const": 1 },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1000,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "platforms": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/platformId" }
+    },
+    "output": {
+      "type": "string",
+      "enum": ["managed", "preview"],
+      "default": "managed"
+    },
+    "overrideDirectories": {
+      "type": "array",
+      "default": [],
+      "uniqueItems": true,
+      "maxItems": 1000,
+      "items": { "$ref": "#/$defs/overrideDirectory" }
+    },
+    "hooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": { "install": false, "preCommit": false },
+      "properties": {
+        "install": { "type": "boolean", "default": false },
+        "preCommit": { "type": "boolean", "default": false }
+      }
+    },
+    "plugins": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": { "profile": "none", "recommendations": [] },
+      "properties": {
+        "profile": { "type": "string", "enum": ["none", "recommended"], "default": "none" },
+        "recommendations": {
+          "type": "array",
+          "default": [],
+          "uniqueItems": true,
+          "maxItems": 1000,
+          "items": { "type": "string", "minLength": 1, "maxLength": 214 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "platformId": {
+      "type": "string",
+      "enum": ["claude-code", "codex"]
+    },
+    "packageName": {
+      "type": "string",
+      "pattern": "^@[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*$",
+      "maxLength": 214
+    },
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$",
+      "maxLength": 64
+    },
+    "sha256Hex": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "relativeDirectory": {
+      "type": "string",
+      "pattern": "^(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+(?:/(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+)*$",
+      "maxLength": 1024
+    },
+    "overrideDirectory": {
+      "description": "A strict descendant of the literal ai/overrides root. The root itself, absolute paths, dot and parent components, backslashes, drive letters, and UNC prefixes are all rejected lexically, before any filesystem access.",
+      "type": "string",
+      "pattern": "^ai/overrides/(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+(?:/(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+)*$",
+      "maxLength": 1024
+    },
+    "gitUrl": {
+      "description": "Only these Git transports are recognised. A bare https URL to arbitrary content is not a source and is rejected here, before any provider or acquisition call.",
+      "type": "string",
+      "pattern": "^(?:https://[A-Za-z0-9.-]+(?::[0-9]{1,5})?/[A-Za-z0-9._/-]+\\.git|ssh://git@[A-Za-z0-9.-]+(?::[0-9]{1,5})?/[A-Za-z0-9._/-]+\\.git|git@[A-Za-z0-9.-]+:[A-Za-z0-9._/-]+\\.git)$",
+      "maxLength": 2048
+    },
+    "source": {
+      "oneOf": [
+        { "$ref": "#/$defs/localSource" },
+        { "$ref": "#/$defs/npmSource" },
+        { "$ref": "#/$defs/gitSource" }
+      ]
+    },
+    "localSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path"],
+      "properties": {
+        "kind": { "const": "local" },
+        "path": { "$ref": "#/$defs/relativeDirectory" }
+      }
+    },
+    "npmSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name", "version"],
+      "properties": {
+        "kind": { "const": "npm" },
+        "name": { "$ref": "#/$defs/packageName" },
+        "version": { "$ref": "#/$defs/semanticVersion" }
+      }
+    },
+    "gitSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "url", "commit"],
+      "properties": {
+        "kind": { "const": "git" },
+        "url": { "$ref": "#/$defs/gitUrl" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "subdirectory": { "$ref": "#/$defs/relativeDirectory" }
+      }
+    }
+  }
+}

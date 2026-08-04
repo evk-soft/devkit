@@ -1,0 +1,49 @@
+{
+  "name": "@evk-soft/ai-tooling",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schemas/*.json": "./schemas/*.json",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "ai-tooling": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --build tsconfig.json",
+    "typecheck": "tsc --project tsconfig.json --noEmit --pretty false",
+    "test:unit": "vitest run tests/unit tests/package tests/security",
+    "test:integration": "vitest run tests/integration",
+    "test": "pnpm run test:unit && pnpm run test:integration",
+    "pack:check": "pnpm run build && node scripts/check-package-contents.mjs",
+    "check": "pnpm run typecheck && pnpm run test && pnpm run pack:check"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "json-canonicalize": "2.0.0",
+    "jsonc-parser": "3.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "@vitest/coverage-v8": "4.1.10",
+    "vitest": "4.1.10"
+  }
+}

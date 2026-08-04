@@ -1,0 +1,17 @@
+{
+  "name": "@evk-soft/ai-pack-core",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Canonical EVK instruction-only AI content pack: rules and skills, no executable code.",
+  "files": [
+    "pack.json",
+    "rules",
+    "skills",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

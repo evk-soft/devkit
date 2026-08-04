@@ -1,0 +1,57 @@
+{
+  "description": "RFC 8785 canonicalization vectors. Each case states the canonical text a value must produce. Unicode is never normalized: a decomposed and a precomposed spelling are different documents.",
+  "cases": [
+    {
+      "name": "key ordering by UTF-16 code unit",
+      "value": { "b": 1, "a": 2, "A": 3, "": 4 },
+      "canonical": "{\"\":4,\"A\":3,\"a\":2,\"b\":1}"
+    },
+    {
+      "name": "nested ordering",
+      "value": { "z": { "b": 1, "a": 2 } },
+      "canonical": "{\"z\":{\"a\":2,\"b\":1}}"
+    },
+    {
+      "name": "arrays keep authored order",
+      "value": { "a": [3, 1, 2] },
+      "canonical": "{\"a\":[3,1,2]}"
+    },
+    { "name": "integer", "value": { "n": 1 }, "canonical": "{\"n\":1}" },
+    { "name": "negative zero renders as zero", "value": { "n": -0 }, "canonical": "{\"n\":0}" },
+    {
+      "name": "decimal below the exponential threshold",
+      "value": { "n": 0.000001 },
+      "canonical": "{\"n\":0.000001}"
+    },
+    {
+      "name": "exponential begins at 1e-7",
+      "value": { "n": 0.0000001 },
+      "canonical": "{\"n\":1e-7}"
+    },
+    {
+      "name": "large integer",
+      "value": { "n": 9007199254740992 },
+      "canonical": "{\"n\":9007199254740992}"
+    },
+    {
+      "name": "empty containers",
+      "value": { "a": [], "b": {} },
+      "canonical": "{\"a\":[],\"b\":{}}"
+    },
+    {
+      "name": "null and booleans",
+      "value": { "a": null, "b": true, "c": false },
+      "canonical": "{\"a\":null,\"b\":true,\"c\":false}"
+    },
+    {
+      "name": "string escapes",
+      "value": { "s": "quote:\" backslash:\\ tab:\t" },
+      "canonical": "{\"s\":\"quote:\\\" backslash:\\\\ tab:\\t\"}"
+    }
+  ],
+  "unicodeIdentity": {
+    "description": "Both spellings render the same visible letter but must produce different bytes; folding them would merge two documents into one digest.",
+    "decomposedCodePoints": [101, 769],
+    "precomposedCodePoints": [233]
+  }
+}
