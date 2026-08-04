@@ -8,7 +8,8 @@ fail the manifest gate.
 ## Current position
 
 - **Phase:** 1 (contracts and instruction-only pack)
-- **Task:** 1 of 9 complete; next is Task 2 (repository-local state boundary, master 1.1)
+- **Task:** 1 and 2 of 9 complete; next is Task 3 (package, export, tarball, artifact boundaries,
+  master 1.2)
 - **Execution worktree:** `D:/disk.w/Projects/evk-soft/devkit-worktrees/ai-tooling-stage-1-phase-1`
 - **Worktree branch:** `ai-tooling/stage-1-phase-1`
 - **Approved base for Phase 1:** `7230c03` (`docs(ai): amend Phase 1 packet 1A/1B literals`)
@@ -32,7 +33,7 @@ Do not fast-forward the worktree onto later documentation commits; the Phase 1 c
 |---|---|---|
 | Entry snapshot | baseline binding + toolchain assertions | done |
 | 1 | Bootstrap harness and phase-delta verifier (master 1.0) | done — 31 tests green, typecheck clean |
-| 2 | Repository-local state boundary (master 1.1) | not started |
+| 2 | Repository-local state boundary (master 1.1) | done — 5 real-root probes verified |
 | 3 | Package, export, tarball, artifact boundaries (master 1.2) | not started |
 | 4 | Diagnostics, strict I-JSON, terminal-safe output (master 1.3) | not started |
 | 5 | Byte-stable schemas and offline registry (master 1.4) | not started |
@@ -98,10 +99,28 @@ while Task 2 is still outstanding.
 
 Files created so far in the worktree (uncommitted):
 
-- `packages/ai-tooling/package.json`, `tsconfig.json`, `vitest.config.ts`
+- `packages/ai-tooling/package.json`, `tsconfig.json`, `vitest.config.ts`, `README.md`
+- `packages/ai-tooling/src/index.ts`, `src/cli.ts`
 - `packages/ai-tooling/scripts/verify-phase-delta.mjs`
 - `packages/ai-tooling/tests/unit/verify-phase-delta.spec.ts`
-- modified root `package.json` (adds `check:ai-tooling`) and `pnpm-lock.yaml`
+- `packages/ai-tooling/tests/helpers/temp-repository.ts`
+- `packages/ai-tooling/tests/integration/repository-ignore.spec.ts`
+- modified root `package.json` (adds `check:ai-tooling`), `pnpm-lock.yaml`, and `.gitignore`
+
+32 tests pass across 2 files; `typecheck` exits 0. `node packages/ai-tooling/scripts/verify-phase-delta.mjs
+--phase 1 --worktree` now reports `missing path: configs/ai/LICENSE`, which is Task 8 work — correct
+for this position.
+
+### Task 2 notes
+
+`.gitignore` gained exactly the two planned LF-terminated lines; the file has no CR and ends with LF.
+All five real-root probes behave as specified: the four `.ai-tooling/**` paths are ignored and cite
+`.gitignore:142:/.ai-tooling/`, and `ai-tooling.lock.json` exits 1 with empty output.
+
+`tests/helpers/temp-repository.ts` deliberately omits `--literal-pathspecs` and
+`GIT_LITERAL_PATHSPECS`, even though section 0.3 applies them to verifier queries: `git check-ignore`
+fails with `pathspec magic not supported by this command: 'literal'` under either. Task 2 step 3 does
+not require them for this helper, and the probes use fixed literal paths.
 
 ## Plan defects found and amended
 
@@ -131,5 +150,5 @@ Found during execution and amended in `7230c03`:
 2. `cd` into the worktree above; do not `cd` into the main checkout.
 3. Confirm `git rev-parse HEAD` equals the approved base and `git status` shows only the files listed
    above.
-4. Continue at Task 2 (master 1.1): append the two LF-terminated `/.ai-tooling/` lines to root
-   `.gitignore` and add `tests/integration/repository-ignore.spec.ts` with its five probes.
+4. Continue at Task 3 (master 1.2): package/export/tarball boundaries, `check-package-contents.mjs`,
+   `check-stage1-artifacts.mjs`, and the artifact-scan security spec with its fixtures.
