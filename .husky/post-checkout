@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+
+# Never run inside a linked worktree. `git worktree add` really does fire this hook, and it passes
+# $3=1, so testing $3 alone does not filter it. In a linked worktree --git-dir and --git-common-dir
+# differ; in the main worktree they are equal. A phase worktree installs with the exact
+# `pnpm install --frozen-lockfile --ignore-scripts` its protocol specifies and no hook may pre-empt
+# that.
+#
+# Every early exit below is written as an explicit `if`, never as `[ ... ] && exit 0`. Husky invokes
+# a hook through `sh -e`, and an AND-list whose left side is false yields status 1; the `if` form
+# has no such ambiguity.
+if [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]; then exit 0; fi
+if [ "${SKIP_HUSKY_AUTO_SYNC:-0}" = "1" ]; then exit 0; fi
+
+# $1 = previous HEAD, $2 = new HEAD, $3 = 1 for a branch checkout.
+if [ "$3" != "1" ]; then exit 0; fi
+case "$1" in 0000000000000000000000000000000000000000) exit 0 ;; esac
+
+CHANGED_FILES="$(git diff --name-only "$1" "$2" 2>/dev/null || true)"
+[ -n "$CHANGED_FILES" ] || exit 0
+
+if printf '%s\n' "$CHANGED_FILES" | grep -Eq '(^pnpm-lock\.yaml$|^pnpm-workspace\.yaml$|^\.npmrc$|(^|/)package\.json$)'; then
+  echo "Branch switched - dependency metadata changed; running pnpm install..."
+  pnpm install --frozen-lockfile || exit 1
+fi

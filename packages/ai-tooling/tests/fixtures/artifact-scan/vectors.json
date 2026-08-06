@@ -1,0 +1,15 @@
+{
+  "description": "Streaming matcher vectors. Bodies are derived from the sentinel byte sequence at runtime so the printable token never appears in a committed fixture.",
+  "cases": [
+    { "name": "exact body", "mutation": "none", "expectMatch": true },
+    { "name": "every split position", "mutation": "none", "allSplits": true, "expectMatch": true },
+    { "name": "prefix only", "mutation": "drop-last", "expectMatch": false },
+    { "name": "suffix only", "mutation": "drop-first", "expectMatch": false },
+    { "name": "altered first byte", "mutation": "alter-first", "expectMatch": false },
+    { "name": "altered last byte", "mutation": "alter-last", "expectMatch": false },
+    { "name": "duplicate body", "mutation": "duplicate", "expectMatch": true },
+    { "name": "LF suffix", "mutation": "append-lf", "expectMatch": true },
+    { "name": "literal backslash-n suffix", "mutation": "append-backslash-n", "expectMatch": true },
+    { "name": "empty body", "mutation": "empty", "expectMatch": false }
+  ]
+}

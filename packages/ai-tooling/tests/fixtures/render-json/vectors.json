@@ -1,0 +1,40 @@
+{
+  "description": "Generated-JSON rendering vectors. Keys are emitted in the supplied schema order, never alphabetically, and a key absent from that order is an error rather than an append.",
+  "cases": [
+    {
+      "name": "schema order wins over authored order",
+      "value": { "nested": { "b": true, "a": null }, "schemaVersion": 1 },
+      "keyOrder": ["schemaVersion", "nested", "a", "b"]
+    },
+    {
+      "name": "empty containers",
+      "value": { "a": [], "b": {} },
+      "keyOrder": ["a", "b"]
+    },
+    {
+      "name": "array items are one per line",
+      "value": { "a": [1, 2] },
+      "keyOrder": ["a"]
+    },
+    {
+      "name": "long strings are never folded",
+      "value": {
+        "a": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      },
+      "keyOrder": ["a"]
+    },
+    {
+      "name": "only JSON-required escapes are applied",
+      "value": { "a": "quote:\" backslash:\\ tab:\t" },
+      "keyOrder": ["a"]
+    }
+  ],
+  "rejected": [
+    {
+      "name": "key absent from the schema order",
+      "value": { "known": 1, "surprise": 2 },
+      "keyOrder": ["known"],
+      "reason": "not in the schema key order"
+    }
+  ]
+}

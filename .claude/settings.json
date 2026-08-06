@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm check)",
+      "Bash(pnpm run check:biome)",
+      "Bash(pnpm run check:runtime)",
+      "Bash(pnpm run check:structure)",
+      "Bash(pnpm run check:supply-chain)",
+      "Bash(pnpm run changelog:check)",
+      "Bash(pnpm --filter @evk-soft/ai-tooling run typecheck)",
+      "Bash(pnpm --filter @evk-soft/ai-tooling run test:unit)",
+      "Bash(pnpm --filter @evk-soft/ai-tooling run test:integration)",
+      "Bash(pnpm --filter @evk-soft/ai-tooling run build)",
+      "Bash(git status)",
+      "Bash(git diff)",
+      "Bash(git diff --check)",
+      "Bash(git log)"
+    ]
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true
+  }
+}

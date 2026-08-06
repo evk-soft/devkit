@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/evk-soft/devkit/refs/tags/ai-tooling-v0.1.0/packages/ai-tooling/schemas/lock.schema.json",
+  "title": "EVK AI tooling repository lock, version 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "configurationDigest", "selectionDigest", "packs", "outputs"],
+  "properties": {
+    "version": { "const": 1 },
+    "configurationDigest": { "$ref": "#/$defs/sha256Hex" },
+    "selectionDigest": { "$ref": "#/$defs/sha256Hex" },
+    "packs": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 1000,
+      "items": { "$ref": "#/$defs/frozenPack" }
+    },
+    "outputs": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 100000,
+      "items": { "$ref": "#/$defs/managedLeaf" }
+    }
+  },
+  "$defs": {
+    "sha256Hex": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "packageName": {
+      "type": "string",
+      "pattern": "^@[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*$",
+      "maxLength": 214
+    },
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$",
+      "maxLength": 64
+    },
+    "repositoryPath": {
+      "type": "string",
+      "pattern": "^(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+(?:/(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+)*$",
+      "maxLength": 1024
+    },
+    "platformId": {
+      "type": "string",
+      "enum": ["claude-code", "codex"]
+    },
+    "frozenPack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "packVersion", "digest"],
+      "properties": {
+        "name": { "$ref": "#/$defs/packageName" },
+        "packVersion": { "$ref": "#/$defs/semanticVersion" },
+        "digest": { "$ref": "#/$defs/sha256Hex" }
+      }
+    },
+    "managedLeaf": {
+      "description": "One generated file the tool owns. Ownership is recorded per leaf so a later run can tell a tool-written file from a hand-edited one.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "platform", "digest", "owner"],
+      "properties": {
+        "path": { "$ref": "#/$defs/repositoryPath" },
+        "platform": { "$ref": "#/$defs/platformId" },
+        "digest": { "$ref": "#/$defs/sha256Hex" },
+        "owner": { "type": "string", "enum": ["managed"] }
+      }
+    }
+  }
+}

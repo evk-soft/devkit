@@ -2,3 +2,32 @@ packages:
   - "configs/*"
   - "packages/*"
 
+# --- Migrated from .npmrc; pnpm 11 reads behavioural settings here, in camelCase ---
+engineStrict: true
+nodeLinker: isolated
+sharedWorkspaceLockfile: true
+
+# --- Supply chain ---
+# Empty allowlist: no dependency may execute code at install time.
+# WARNING: under pnpm 11 an install that meets an unlisted build script fails with
+# ERR_PNPM_IGNORED_BUILDS *and writes a placeholder entry back into this file*. CI installs without
+# --ignore-scripts, so the first dependency that adds an install script breaks CI and dirties the
+# worktree. Such a dependency must be added here, with a decision, in the same commit that adds it.
+allowBuilds: {}
+# 4320 minutes = 3 days. Chosen against measured publish dates rather than copied: a 7-day delay
+# would have blocked turbo 2.10.8, which was 5 days old when this plan was written, and pnpm's own
+# default of 1440 admits a next-day malicious publish. Re-check this value at the F2 entry snapshot.
+minimumReleaseAge: 4320
+
+# --- Dependency single-sourcing ---
+# catalogMode: strict governs how `pnpm add` writes NEW dependencies. It does not retroactively
+# forbid an inline version, which is why packages/ai-tooling can keep its literal pins — those are
+# required, because check-package-contents.mjs runs `pnpm pack` from a staging root outside the
+# workspace and a catalog: specifier cannot resolve there.
+catalogMode: strict
+
+catalog:
+  '@biomejs/biome': ^2.5.6
+  husky: ^9.1.7
+  turbo: ^2.10.8
+  typescript: ^6.0.3

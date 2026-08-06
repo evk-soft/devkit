@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "name": "@evk-soft/ai-pack-core",
+  "packVersion": "0.1.0",
+  "description": "Canonical EVK instruction-only content: repository grounding and planning.",
+  "rules": [
+    {
+      "id": "evk-soft/rules/grounding",
+      "path": "rules/evk-grounding"
+    }
+  ],
+  "skills": [
+    {
+      "id": "evk-soft/skills/plan",
+      "path": "skills/evk-plan"
+    }
+  ]
+}

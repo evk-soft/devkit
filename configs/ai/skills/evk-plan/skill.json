@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "id": "evk-soft/skills/plan",
+  "title": "evk-plan",
+  "description": "Plan work as file-mapped, test-first steps and stop for approval before implementing.",
+  "instructions": "instructions.md",
+  "requiredCapabilities": ["instructions.markdown"],
+  "assets": []
+}

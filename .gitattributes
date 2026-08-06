@@ -1,2 +1,6 @@
 * text=auto eol=lf
 
+# Windows shell scripts keep CRLF. Nothing tracked needs this today; it is a forward guard so a
+# future .bat/.cmd is not normalized to LF by the `* text=auto eol=lf` rule above.
+*.bat text eol=crlf
+*.cmd text eol=crlf
