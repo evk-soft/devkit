@@ -1,7 +1,7 @@
 # Repository Foundation Design
 
 **Date:** 2026-08-06
-**Status:** Draft — revision 2, awaiting owner approval
+**Status:** Draft — revision 3, awaiting owner approval
 **Profile:** infrastructure — repository configuration, guard scripts, and toolchain versions; no
 product behaviour change and no edit to `@evk-soft/ai-tooling` source
 **Scope:** `.editorconfig`, `.gitattributes`, `.gitignore`, `.npmrc`, `pnpm-workspace.yaml`,
@@ -12,9 +12,14 @@ the pinned toolchain lines of `docs/superpowers/plans/**`
 **Depends on:** Stage 1 Phase 1 commit `ec88ca3`, owner-approved 2026-08-06
 **Reference implementation:** `D:\disk.w\Projects\Slotegrator\Projects\non-restrict-proxy`
 
-**Revision 2** incorporates a three-model adversarial audit of revision 1. It removes one false
-Grounding claim, corrects four overstated mechanisms, and adds four blocking constraints that
-revision 1 missed. Findings are marked **[audit]** where they changed the design.
+**Revision 2** incorporated a three-model adversarial audit of revision 1: it removed one false
+Grounding claim, corrected four overstated mechanisms, and added four blocking constraints.
+Findings from that pass are marked **[audit]**.
+
+**Revision 3** records four owner decisions and the design change the first of them produced: the
+Biome version stops being written into 12 files, Node.js becomes the declared default runtime with
+Bun frozen rather than removed, `.claude/settings.json` is committed with runtime paths ignored, and
+CI gains a Windows job. Owner decisions are marked **[owner]**. There are no open questions left.
 
 ## Goal
 
@@ -70,7 +75,16 @@ been removed rather than softened.
 | devkit has no `.editorconfig`, no `.claude/`, no `turbo.json`, no `changelog.d/`, and exactly one file in `scripts/` | directory listing, 2026-08-06 |
 | **[audit]** `.gitignore` contains no entry matching `claude`, `turbo`, or `idea` | `Select-String` over `.gitignore`, 0 matches each |
 | **[audit]** Biome 2.5.6 is pinned in the `$schema` URL of 12 tracked JSON files | `biome.json:2`, `configs/biome-config/biome.preset.json:2`, `configs/biome-config/presets/*.json:2` (10 files) |
+| Biome ships its configuration schema inside the npm package | `node_modules/@biomejs/biome/configuration_schema.json`, 576117 bytes |
+| Biome documents a relative `$schema` path as a supported alternative to the versioned URL | https://biomejs.dev/reference/configuration — `"./node_modules/@biomejs/biome/configuration_schema.json"` |
+| That relative path resolves from both the repository root and `configs/biome-config/` | `Test-Path` both locations, `True` |
+| `biome migrate` updates `$schema` automatically, so hand-editing is never required | https://biomejs.dev — Biome v1.5 release notes |
+| Biome v2 supports nested configs via `"extends": "//"`, and devkit's root config already extends the shared preset | https://biomejs.dev/guides/big-projects, `biome.json:3` |
+| `@evk-soft/biome-config` is published and its Biome peer range is `^2.3.11` — a range, not a pin | `configs/biome-config/package.json` |
+| `$schema` is an editor affordance only; Biome does not read it to select behaviour | https://biomejs.dev/reference/configuration |
 | **[audit]** `biome.json` is owned by the Phase 1 and Phase 3 manifests | `manifests/ai-tooling-stage-1-phase-1.txt`, `-phase-3.txt` |
+| Bun is declared in the published contract of two packages, not only in CI | `packages/runtime-detect/package.json` and `configs/biome-config/package.json` both declare `engines.bun >= 1.3.0`; `configs/biome-config/presets/bun.json` is an exported entry point |
+| `configs/biome-config` declares `engines.pnpm >= 10.28.0`, which pnpm 11.20.0 satisfies | `configs/biome-config/package.json` |
 | **[audit]** `configs/typescript-config` is a public package whose TypeScript constraint is a peer range excluding 7.x | `configs/typescript-config/package.json:15` — `"typescript": "^5.9.3 \|\| ^6.0.0"`, with `private: false` |
 | **[audit]** The Biome preset sets `lineWidth: 100` | `configs/biome-config/biome.preset.json` |
 | **[audit]** No phase manifest lists any `changelog.d/*` or `CHANGELOG.md` path | `Select-String` over `manifests/*.txt`, 0 matches |
@@ -120,6 +134,8 @@ not feed it in any case. The row is deleted and `check-licenses.mjs` is justifie
 | New guard scripts | `check-audit.mjs` and `check-licenses.mjs` are written from scratch | Honest effort accounting; the reference has no such files |
 | Ported guard scripts | `check-circular.mjs` and `check-workspace-boundaries.mjs` are adapted, not copied | They import reference-only helpers and assume a 49-workspace layout devkit does not have |
 | **[audit]** Guard wiring | New guards get their own scripts and CI steps; `pnpm check` keeps its current *script definition* — but the widened `biome check .` surface is acknowledged, not denied | New files under `scripts/` do enter the lint surface; they must be lint-clean before the F1 gate |
+| **[owner]** Formatter version references | Replace all 12 `$schema` URLs with the relative path into the installed package, in F1 | The Biome version stops being written down anywhere except the catalog; F2's Biome work collapses to one line |
+| **[owner]** Default runtime | Node.js is the default and only runtime the toolchain and gates target | Bun receives no new investment; the existing smoke job is kept but never extended |
 | Turbo | Added as an additive task graph, pinned via the catalog at 2.10.8 | No Stage 1 command is rerouted through it |
 | Hook safety | `post-checkout`/`post-merge` exit 0 inside any linked worktree | Verified necessary: `git worktree add` really does fire `post-checkout` with `$3=1` |
 | Agent configuration | Commit `.claude/settings.json` and the ported skill; ignore every Claude Code runtime path | Owner decision, 2026-08-06. Sharing the tool configuration is the goal; sharing agent scratch state would break the phase gate |
@@ -261,6 +277,38 @@ therefore requires the new files to be clean under the pinned Biome before stagi
 `biome.json#files.includes` — the mechanism the repository already uses for the Phase 1 fixture
 carve-out — rather than by weakening a rule.
 
+**[owner] Formatter version references.** The Biome version is currently written into the `$schema`
+URL of 12 tracked files, which is 12 places to keep in sync for every Biome upgrade, forever. F1
+removes the problem rather than managing it: every `$schema` becomes the relative path
+`./node_modules/@biomejs/biome/configuration_schema.json`, which Biome documents as a supported
+alternative and which always resolves to exactly the installed version. Verified to resolve from both
+the repository root and `configs/biome-config/`.
+
+Two things make this safe. `$schema` is an editor affordance — Biome does not read it to select
+behaviour — so a wrong or unresolvable value cannot change formatting or linting. And the published
+peer range of `@evk-soft/biome-config` is `^2.3.11`, a range: a `$schema` URL naming one exact
+version was already advertising something narrower than the package actually accepts.
+
+The honest cost: `configs/biome-config/**` is published, so an external consumer who opens a shipped
+preset in an editor will find the relative path does not resolve from inside their `node_modules`.
+That degrades an editor affordance for a file consumers read but do not edit, in exchange for
+deleting 12 permanent sync points. If the owner prefers to keep URLs in the published files, the
+fallback is `biome migrate`, which rewrites `$schema` automatically — but then the version is still
+written down in 11 places, and the sync burden returns.
+
+After this change the Biome version exists in exactly one place: the catalog entry in
+`pnpm-workspace.yaml`.
+
+**[owner] Runtime posture.** Node.js is the default and only runtime the toolchain, the gates, and
+the guard scripts target. The existing Bun smoke job is kept — it runs `bun ./scripts/runtime-check.mjs`,
+never invokes pnpm, and is therefore unaffected by the pnpm 11 upgrade — but it is not extended: no
+Bun matrix, no Bun-specific scripts, no Bun task in `turbo.json`, and no Bun step added to any new
+CI job. Removing it is deliberately *not* proposed, because Bun is not merely a CI convenience here:
+`@evk-soft/runtime-detect` and `@evk-soft/biome-config` both declare `engines.bun >= 1.3.0` in their
+published manifests, and `@evk-soft/biome-config` exports a `./presets/bun` entry point. Dropping Bun
+is therefore a product decision about two published packages, out of foundation scope, and this
+design deliberately adds no new coupling that would make that decision harder later.
+
 **Task orchestration.** `turbo.json` declares `build`, `typecheck`, `lint`, and `test` with explicit
 inputs and outputs, with turbo pinned in the catalog at 2.10.8. It is added *alongside* the existing
 scripts; no Stage 1 command is rerouted through it, so a turbo cache miss can never change the
@@ -314,25 +362,31 @@ CI additionally gains, while `ci.yml` is already open **[audit]**:
   design whose stated posture is supply-chain hardening, a mutable third-party action tag running
   with default write-capable token scope is a larger exposure than an empty build allowlist over a
   dependency set with no install scripts.
-- a Windows job. CI is Ubuntu-only today, this repository is developed on Windows, Phase 1 code has a
-  `platform === 'win32'` corepack branch that CI never exercises, and the Stage 1 protocol itself
-  requires green Windows, Linux, and macOS jobs from Phase 3 onward.
-- a step invoking the `packages/ai-tooling` gate commands. Today CI runs only `pnpm check`, which
-  never touches that package, so nothing automated protects the very commands binding constraint 1
-  names. If the owner prefers to keep CI minimal, this is the one item to drop — but it should be
-  dropped knowingly.
+- **[owner]** a Windows job. CI is Ubuntu-only today, this repository is developed on Windows, Phase 1
+  code has a `platform === 'win32'` corepack branch that CI never exercises, and the Stage 1 protocol
+  requires green Windows, Linux, and macOS jobs from Phase 3 onward. macOS is not added yet: it has
+  no current failure mode and is due with Phase 3.
+- **[owner]** a step invoking the `packages/ai-tooling` gate commands on both jobs. Today CI runs only
+  `pnpm check`, which never touches that package, so nothing automated protects the very commands
+  binding constraint 1 names — the constraint is asserted by hand at each gate and by nothing else
+  between gates.
+
+The Bun job is left exactly as it is: not removed, not extended, not given new steps.
 
 ### F2 — Compiler upgrade
 
 TypeScript `^6.0.3` → `^7.0.2` and Biome `^2.5.6` → `^2.5.7`. Vitest is already at 4.1.10 and is not
 touched. pnpm is already done in F1.
 
-**[audit] The file set is larger than revision 1 stated.**
+**Biome's share of F2 is now one line.** The audit found the version pinned in the `$schema` URL of
+12 tracked files; F1 replaces all 12 with the relative path into the installed package, so by the
+time F2 runs there is nothing left to synchronize. The published peer range of
+`@evk-soft/biome-config` is `^2.3.11` and already admits 2.5.7, so it needs no edit either. F2
+therefore changes Biome in exactly one place: the catalog entry. This is the direct payoff of
+treating the 12 pins as a design defect in F1 rather than as work to repeat at every upgrade.
 
-- Biome's version is pinned not only in `package.json` but in the `$schema` URL of **12 tracked JSON
-  files**: `biome.json` and `configs/biome-config/biome.preset.json` plus the 10 files under
-  `configs/biome-config/presets/`. All 12 are amended together, or the schema URL contradicts the
-  installed formatter.
+**[audit] TypeScript's share is larger than revision 1 stated.**
+
 - `configs/typescript-config/package.json` does **not** carry `^6.0.3`. It carries
   `"peerDependencies": { "typescript": "^5.9.3 || ^6.0.0" }` on a package published with
   `private: false`. The catalog mechanism does not apply to peer ranges. Widening this is a
@@ -397,17 +451,33 @@ These are properties an F1/F2 implementation plan must **assert**, not merely re
 | Phase | Contents | Gate |
 |---|---|---|
 | F0 | Rebase the plan branch onto `ec88ca3` | None; verified by `git log --graph` showing one line |
-| F1 | Ignore rules, foundation files, guard scripts, hooks, turbo, changelog scaffolding, `.claude/**`, pnpm 11, **all pnpm pin amendments**, CI hardening | Full Phase 1 gate re-run, manifest-scoped delta, one commit, owner stop |
-| F2 | TypeScript 7, Biome 2.5.7 across 12 `$schema` sites, the public peer range, remaining plan amendments | Same, plus a search asserting no stale pin remains |
+| F1 | Ignore rules, foundation files, guard scripts, hooks, turbo, changelog scaffolding, `.claude/**`, pnpm 11, **all pnpm pin amendments**, **12 `$schema` sites made version-free**, CI hardening plus a Windows job | Full Phase 1 gate re-run on Windows and Linux, manifest-scoped delta, one commit, owner stop |
+| F2 | TypeScript 7 and the public peer range; Biome via one catalog line; remaining plan amendments | Same, plus a search asserting no stale pin remains |
+
+## Resolved by the owner, 2026-08-06
+
+The three questions revision 2 left open are closed. They are recorded here rather than deleted, so
+a later reader sees that they were decided rather than overlooked.
+
+1. **Windows CI job — include it in F1.** The gap is real and already instantiated: CI is Ubuntu-only
+   (`ci.yml:11`), the repository is developed on Windows, Phase 1 carries a `platform === 'win32'`
+   corepack branch that CI never exercises, and Stage 1 requires green Windows, Linux, and macOS jobs
+   from Phase 3 onward. `ci.yml` is already open in F1, so the marginal cost is one job block.
+   macOS is deliberately *not* added yet — it is a Phase 3 requirement with no current failure mode,
+   and adding it now would be scope for its own sake.
+2. **Plugin review policy — keep the enabled set minimal and re-read it at every foundation gate.**
+   `enabledPlugins` names plugins without versions, so an upstream plugin update changes shared
+   behaviour with no repository diff. There is no pinning mechanism to reach for; the mitigation is
+   to enable few plugins, list them in this design, and re-read the block at each gate. That is a
+   process control, stated plainly rather than dressed up as a technical one.
+3. **Bun — Node.js is the default; Bun is frozen, not removed.** See the runtime posture paragraph in
+   F1. The smoke job never invokes pnpm and is unaffected by the upgrade, so keeping it costs
+   nothing; extending it is prohibited, and removing it is a product decision about two published
+   packages rather than a foundation change.
 
 ## Open questions
 
-1. **Does the Windows CI job belong in F1?** It closes a real, already-instantiated gap, but it
-   enlarges a phase whose purpose is configuration. The alternative is a third foundation phase.
-2. **Does `.claude/settings.json` need an `enabledPlugins` review policy?** Committing the plugin set
-   means a plugin update changes shared behaviour for every developer without a repository diff.
-3. **Does the Bun smoke job survive pnpm 11?** CI runs `bun ./scripts/runtime-check.mjs` without
-   pnpm, so it should be unaffected; to be confirmed in F1's CI review.
+None. All questions raised by this design have been decided.
 
 ## Review gate
 
