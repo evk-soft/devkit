@@ -69,7 +69,7 @@ been removed rather than softened.
 | Root scripts are exactly `check`, `check:biome`, `check:runtime`, `format`, `prepare` | `package.json:21-27` |
 | The declared baseline is pnpm 10.28.0, Node >=24, TypeScript ^6.0.3, Biome ^2.5.6 | `package.json:5-8`, `package.json:28-32` |
 | CI pins pnpm 10.28.0, runs `pnpm check` on Ubuntu only, plus a Bun runtime smoke job | `.github/workflows/ci.yml:11`, `:20`, `:36`, `:38-47` |
-| CI never invokes any `packages/ai-tooling` gate command | `.github/workflows/ci.yml:35-36` is the only check step, and `package.json:22` expands to `check:biome && check:runtime` |
+| **[corrected]** On F1's actual base `ec88ca3`, `pnpm check` already runs every Stage 1 gate command | worktree `package.json:22-23` — `check` includes `check:ai-tooling`, which is `pnpm --filter @evk-soft/ai-tooling run check` = `typecheck && test && pack:check`; `test` is `test:unit && test:integration` and `pack:check` runs `build` first |
 | CI uses mutable action tags and declares no `permissions:` block | `.github/workflows/ci.yml:13-14`, `:25`, `:43` |
 | The pre-commit hook formats the tree and then stages everything; it is mode `100644` | `.husky/pre-commit:1-2`, `git ls-files -s .husky/pre-commit` |
 | devkit has no `.editorconfig`, no `.claude/`, no `turbo.json`, no `changelog.d/`, and exactly one file in `scripts/` | directory listing, 2026-08-06 |
@@ -366,10 +366,13 @@ CI additionally gains, while `ci.yml` is already open **[audit]**:
   code has a `platform === 'win32'` corepack branch that CI never exercises, and the Stage 1 protocol
   requires green Windows, Linux, and macOS jobs from Phase 3 onward. macOS is not added yet: it has
   no current failure mode and is due with Phase 3.
-- **[owner]** a step invoking the `packages/ai-tooling` gate commands on both jobs. Today CI runs only
-  `pnpm check`, which never touches that package, so nothing automated protects the very commands
-  binding constraint 1 names — the constraint is asserted by hand at each gate and by nothing else
-  between gates.
+**[corrected]** Revision 3 additionally proposed a CI step invoking the `packages/ai-tooling` gate
+commands, on the audit's finding that CI never runs them. That finding was read against the plan
+branch, where Phase 1 does not exist. On F1's actual base `ec88ca3` the root `check` script already
+chains `check:ai-tooling`, which expands to `typecheck && test && pack:check` — every command binding
+constraint 1 names. No new step is required; the Windows job inherits the coverage by running
+`pnpm check` like the Linux one. What F1 must instead verify is that `pack:check` can run on a CI
+runner at all, since it resolves pnpm from the corepack cache with the network disabled.
 
 The Bun job is left exactly as it is: not removed, not extended, not given new steps.
 
