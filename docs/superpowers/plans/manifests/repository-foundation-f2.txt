@@ -5,6 +5,5 @@ M 100644 docs/superpowers/plans/2026-08-02-ai-tooling-stage-1-phase-3-implementa
 M 100644 docs/superpowers/plans/2026-08-02-ai-tooling-stage-1-phase-4-implementation.md
 M 100644 docs/superpowers/plans/2026-08-02-ai-tooling-stage-1-phase-5-implementation.md
 M 100644 docs/superpowers/plans/2026-08-02-ai-tooling-stage-1-safe-core-implementation-plan.md
-M 100644 package.json
 M 100644 pnpm-lock.yaml
 M 100644 pnpm-workspace.yaml

@@ -34,8 +34,11 @@ or later for the phase object-reading gates.
   approved-base bytes of that file.
 - Every new tracked file is mode `100644`. The manifest grammar admits nothing else, and every
   reference script this plan adapts is `100755` upstream.
-- No Stage 1 phase may author a changelog fragment: no Stage 1 manifest lists `changelog.d/*` or
-  `CHANGELOG.md`. F1 creates that infrastructure dormant; first use is after Stage 1 Phase 5.
+- No **Stage 1** phase may author a changelog fragment: no Stage 1 phase manifest lists
+  `changelog.d/*` or `CHANGELOG.md`, and the phase-delta verifier rejects every unlisted path. F1 and
+  F2 are foundation phases, not Stage 1 phases, and their own manifests do list the scaffolding files
+  F1 creates — that is not a violation of this rule but the reason the rule can be stated. F1 creates
+  the infrastructure dormant; the first actual fragment comes after Stage 1 Phase 5.
 - Do not push, open a PR, or publish. Both phases stop at a local commit plus owner review.
 - Historical records are not rewritten. `docs/superpowers/plans/PROGRESS.md` and
   `docs/ai-tooling/research/devkit-baseline.md` contain `10.28.0` as statements about what was
@@ -51,7 +54,7 @@ Two plan-owned manifests are the fail-closed staging authority. They are committ
 plan, before F1 begins, and are review data rather than implementation:
 
 - `docs/superpowers/plans/manifests/repository-foundation-f1.txt` — 40 paths
-- `docs/superpowers/plans/manifests/repository-foundation-f2.txt` — 10 paths
+- `docs/superpowers/plans/manifests/repository-foundation-f2.txt` — 9 paths
 
 Each LF line is `A 100644 path`, `M 100644 path`, or `D - path`; paths use the ASCII grammar
 `[A-Za-z0-9._/-]+`, contain no empty or dot components, and are sorted by raw byte. Both files were
@@ -175,13 +178,16 @@ Create the probe as a throwaway script at `probe-ignore.ps1` in the worktree roo
 never staged):
 
 ```powershell
+# Every path here must be ignored *by this repository's own .gitignore*. Do not use a `.log` or
+# other extension the base .gitignore already covers, or the probe proves nothing. `.claude/
+# settings.local.json` is omitted for the same reason in reverse: some developers have it in a
+# global excludes file, which would make the pre-change run pass on their machine and not on others.
 $expectIgnored = @(
-  '.claude/settings.local.json',
   '.claude/agent-memory/note.md',
   '.claude/worktrees/x/state.json',
   '.claude/todos/t.json',
   '.turbo/cache.bin',
-  'packages/ai-tooling/.turbo/x.log',
+  'packages/ai-tooling/.turbo/x.bin',
   '.idea/workspace.xml'
 )
 $expectVisible = @(
@@ -205,8 +211,10 @@ if ($fail) { throw 'ignore probe failed' } else { Write-Host 'ignore probe ok' }
 - [ ] **Step 2: run the probe to verify it fails**
 
 Run: `pwsh -File probe-ignore.ps1`
-Expected: FAIL, listing all seven `NOT IGNORED (should be)` paths, because `.gitignore` currently has
-no `claude`, `turbo`, or `idea` entry.
+Expected: FAIL, listing all six `NOT IGNORED (should be)` paths, because `.gitignore` at the F1 base
+contains no `claude`, `turbo`, or `idea` entry. If any of the six is already reported as ignored,
+stop and find out why before changing anything — a global or machine-local excludes file is
+interfering and the probe would not be measuring this repository.
 
 - [ ] **Step 3: append the ignore rules**
 
@@ -314,11 +322,20 @@ fail with `no installed pnpm 11.20.0 JavaScript entry was found`.
 ```powershell
 pnpx codemod run pnpm-v10-to-v11
 git diff -- .npmrc pnpm-workspace.yaml
+git status --porcelain=v1 --untracked-files=all
 ```
 
 Expected: a diff moving settings out of `.npmrc`. Read every line. The codemod also rewrites keys this
 repository does not use; discard any hunk that introduces a setting not named in Step 3. The codemod
 is a labour-saver, not an authority — Step 3 defines the exact intended result.
+
+**Bound its blast radius before continuing.** The status output must list exactly `.npmrc`,
+`pnpm-workspace.yaml`, and Task F1.1's three files. Anything else — a rewritten root `package.json`, a
+touched workflow, a `.codemod/` cache directory — must be reverted with `git checkout --` or deleted
+now, not discovered at the F1.12 gate when the phase would have to be unwound. Record the codemod
+version that actually ran: this is the one step in either phase that fetches and executes an unpinned
+third-party package, and `pnpx` bypasses both the lockfile and `minimumReleaseAge`. If the owner
+prefers, skip this step entirely and hand-write Step 3 — the codemod saves typing, nothing more.
 
 - [ ] **Step 3: write the exact intended result**
 
@@ -347,6 +364,10 @@ sharedWorkspaceLockfile: true
 
 # --- Supply chain ---
 # Empty allowlist: no dependency may execute code at install time.
+# WARNING: under pnpm 11 an install that meets an unlisted build script fails with
+# ERR_PNPM_IGNORED_BUILDS *and writes a placeholder entry back into this file*. CI installs without
+# --ignore-scripts, so the first dependency that adds an install script breaks CI and dirties the
+# worktree. Such a dependency must be added here, with a decision, in the same commit that adds it.
 allowBuilds: {}
 # 4320 minutes = 3 days. Chosen against measured publish dates rather than copied: a 7-day delay
 # would have blocked turbo 2.10.8, which was 5 days old when this plan was written, and pnpm's own
@@ -361,7 +382,12 @@ integrity-hash form `pnpm@11.20.0+sha512-…` is rejected by
 - [ ] **Step 4: regenerate the lockfile and prove the settings took effect**
 
 ```powershell
-corepack use pnpm@11.20.0
+corepack prepare pnpm@11.20.0 --activate
+if ($LASTEXITCODE -ne 0) { throw 'corepack prepare failed' }
+$pm = (Get-Content package.json | Select-String '"packageManager"').Line
+if ($pm -notmatch '"packageManager":\s*"pnpm@\d+\.\d+\.\d+"') {
+  throw "packageManager is $pm; check-package-contents.mjs requires the plain pnpm@X.Y.Z form"
+}
 pnpm install --ignore-scripts
 if ($LASTEXITCODE -ne 0) { throw 'pnpm 11 install failed' }
 $v = (pnpm --version).Trim()
@@ -371,9 +397,35 @@ pnpm config get engineStrict
 git status --porcelain=v1 --untracked-files=all
 ```
 
+**Do not use `corepack use`.** It rewrites `packageManager` to the integrity-hash form
+`pnpm@11.20.0+sha512-…`, which `check-package-contents.mjs:264` rejects with
+`root packageManager must pin an exact pnpm version`, and it additionally runs a scripts-enabled
+`pnpm install` that would fire the root `prepare: husky` lifecycle script — forbidden by §0.3.
+`corepack prepare --activate` activates the shim without touching `package.json`. The assertion above
+is the guard: it fails loudly if anything reintroduces the hashed form.
+
 Expected GREEN: install exits `0`; version is `11.20.0`; `nodeLinker` prints `isolated` and
 `engineStrict` prints `true`; the changed set is exactly `.npmrc`, `package.json`,
 `pnpm-lock.yaml`, `pnpm-workspace.yaml` plus Task F1.1's files.
+
+Then confirm the `allowBuilds: {}` failure mode the design requires F1 to establish, in a throwaway
+directory so nothing here is disturbed:
+
+```powershell
+$probe = Join-Path ([System.IO.Path]::GetTempPath()) "allowbuilds-probe-$(Get-Random)"
+New-Item -ItemType Directory -Force $probe | Out-Null
+Push-Location $probe
+'{ "name": "probe", "version": "0.0.0", "private": true }' | Set-Content package.json
+"packages: []`nallowBuilds: {}" | Set-Content pnpm-workspace.yaml
+pnpm add esbuild 2>&1 | Select-String 'IGNORED_BUILDS|allowBuilds'
+Get-Content pnpm-workspace.yaml
+Pop-Location
+Remove-Item -Recurse -Force $probe
+```
+
+Expected: `ERR_PNPM_IGNORED_BUILDS` is reported **and** `pnpm-workspace.yaml` gains a placeholder
+`allowBuilds` entry. Record the observed behaviour. This is why the CI `Install` step must be watched
+the first time any dependency with an install script is added — see the warning comment in Step 3.
 
 - [ ] **Step 5: prove the Stage 1 gate still passes on pnpm 11**
 
@@ -430,9 +482,14 @@ Root `package.json` `devDependencies` becomes exactly:
 - [ ] **Step 3: verify the catalog stops at the ai-tooling boundary**
 
 ```powershell
-Select-String -Path packages/ai-tooling/package.json -Pattern 'catalog:'
-if ($LASTEXITCODE -eq 0) { throw 'packages/ai-tooling must not use catalog: specifiers' }
+$hits = Select-String -Path packages/ai-tooling/package.json -Pattern 'catalog:'
+if ($hits) { $hits; throw 'packages/ai-tooling must not use catalog: specifiers' }
 ```
+
+Branch on `Select-String`'s own result, never on `$LASTEXITCODE`. `Select-String` is a cmdlet and does
+not set `$LASTEXITCODE`; the variable still holds the exit code of the last *native* command, so
+`if ($LASTEXITCODE -eq 0)` here would throw on a clean tree and stay silent after a failed native
+command — wrong in both directions.
 
 Expected GREEN: no match. A `catalog:` specifier there would break `pack:check`, because
 `check-package-contents.mjs` runs `pnpm pack` from a private staging root outside the workspace and a
@@ -493,16 +550,18 @@ Expected: FAIL with `versioned schema URLs remaining: 12`.
 
 - [ ] **Step 3: replace every `$schema` value**
 
-In all 12 files replace the line
-
-```json
-  "$schema": "https://biomejs.dev/schemas/2.5.6/schema.json",
-```
-
-with
+The replacement value depends on the file's depth, because the path is resolved relative to the file
+that carries it. In `biome.json` and `configs/biome-config/biome.preset.json`:
 
 ```json
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+```
+
+In the ten files under `configs/biome-config/presets/` — that directory has no `node_modules` of its
+own — one level up:
+
+```json
+  "$schema": "../node_modules/@biomejs/biome/configuration_schema.json",
 ```
 
 Change nothing else in any of the 12 files. Biome ships that schema inside the package
@@ -548,8 +607,8 @@ invoke it literally.
 ```javascript
 #!/usr/bin/env node
 // Fails when the declared @evk-soft/* workspace dependency graph contains a cycle.
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -618,8 +677,8 @@ console.log(`check-circular ok (${graph.size} workspaces, no cycle)`);
 // Fails when a relative import escapes its own workspace directory. pnpm's isolated linker already
 // blocks phantom package imports; a deep relative path such as ../../other/src/x sidesteps package
 // boundaries entirely and nothing else in this repository looks for it.
-import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
-import { join, dirname, resolve, relative, sep } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -690,7 +749,17 @@ const IGNORED_ADVISORIES = new Set([
 ]);
 const FAIL_LEVELS = ['high', 'critical'];
 
-const result = spawnSync('pnpm', ['audit', '--json'], {
+// Run pnpm's JavaScript entry through this Node binary. Spawning the bare name `pnpm` with
+// shell: false fails on Windows with ENOENT, because pnpm resolves only to a pnpm.CMD shim there,
+// and shell: true would add an argument-quoting surface for no benefit. pnpm sets npm_execpath when
+// it invokes a package script, which is the only supported way to run this guard.
+const pnpmEntry = process.env.npm_execpath;
+if (pnpmEntry === undefined) {
+  console.error('AUDIT_UNAVAILABLE: run this through `pnpm run check:audit`, not directly');
+  process.exit(1);
+}
+
+const result = spawnSync(process.execPath, [pnpmEntry, 'audit', '--json'], {
   encoding: 'utf8',
   shell: false,
   maxBuffer: 64 * 1024 * 1024,
@@ -730,15 +799,20 @@ console.log(`check-audit ok (${advisories.length} advisories, 0 blocking)`);
 #!/usr/bin/env node
 // Allowlist over installed dependency licences. Reads package manifests from the pnpm store layout
 // directly rather than parsing CLI JSON, so the check does not depend on a pnpm output shape.
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const STORE = join(ROOT, 'node_modules', '.pnpm');
 const ALLOWED = new Set([
   '0BSD', 'Apache-2.0', 'BSD-2-Clause', 'BSD-3-Clause', 'BlueOak-1.0.0',
-  'CC0-1.0', 'CC-BY-4.0', 'ISC', 'MIT', 'MIT-0', 'Python-2.0', 'Unlicense',
+  'CC0-1.0', 'CC-BY-4.0', 'ISC', 'MIT', 'MIT-0',
+  // MPL-2.0 is file-level weak copyleft: it obliges disclosure only for modified MPL files, never
+  // for a work that merely depends on them, so it is safe for a permissively licensed toolchain.
+  // Present today via lightningcss, an optional transitive dependency of vite under Vitest 4.
+  'MPL-2.0',
+  'Python-2.0', 'Unlicense',
 ]);
 const EXEMPT = new Set([]); // 'package@version' entries, each with a reviewed reason
 
@@ -829,31 +903,57 @@ on and it must not change.
 
 - [ ] **Step 6: run all four guards green, then prove each fails on a synthetic violation**
 
+The code above is written for reading; Biome owns the exact whitespace. Format the new files first, or
+every later `pnpm check` fails on `check:biome` long before the phase gate and the failure gets
+misattributed to whichever task ran it.
+
 ```powershell
+pnpm -s exec biome check --write scripts
+if ($LASTEXITCODE -ne 0) { throw 'Biome could not make the new scripts clean' }
+pnpm -s exec biome check .
+if ($LASTEXITCODE -ne 0) { throw 'the tree is not Biome-clean after writing the guards' }
+git status --porcelain=v1 --untracked-files=all -- scripts
 pnpm run check:structure
 if ($LASTEXITCODE -ne 0) { throw 'structure guards failed on a clean tree' }
 pnpm run check:supply-chain
 if ($LASTEXITCODE -ne 0) { throw 'supply-chain guards failed on a clean tree' }
 ```
 
-Expected GREEN: both exit `0` and print the four `ok` lines.
+Expected GREEN: the formatter rewrites line wrapping in some of the new files and then `biome check .`
+exits `0`; the status lists only the four new `scripts/*.mjs` paths; and both guard groups exit `0`,
+printing the four `ok` lines. `check:licenses` must report `0 conflicts` — `lightningcss` ships under
+MPL-2.0 and is an optional transitive dependency of vite under Vitest 4, which is why `MPL-2.0` is in
+`ALLOWED`. If it is ever removed from the allowlist, this step fails on a clean tree.
 
 Then prove the boundary guard actually detects an escape:
 
+The probe file goes in `packages/runtime-detect`, never in `packages/ai-tooling`: a Global Constraint
+forbids writing anywhere under the approved Phase 1 tree, and a probe that relies on manual cleanup
+inside a protected directory is exactly the kind of write that survives a mistake.
+
 ```powershell
-'import { x } from "../../packages/runtime-detect/index.js";' |
-  Set-Content -NoNewline packages/ai-tooling/boundary-probe.mjs
+'import { x } from "../../packages/ai-tooling/src/index.js";' |
+  Set-Content -NoNewline packages/runtime-detect/boundary-probe.mjs
 node ./scripts/check-workspace-boundaries.mjs
-if ($LASTEXITCODE -eq 0) { Remove-Item packages/ai-tooling/boundary-probe.mjs; throw 'guard did not detect the escape' }
-Remove-Item packages/ai-tooling/boundary-probe.mjs
+$detected = $LASTEXITCODE
+Remove-Item packages/runtime-detect/boundary-probe.mjs
+if ($detected -eq 0) { throw 'guard did not detect the escape' }
 node ./scripts/check-workspace-boundaries.mjs
 if ($LASTEXITCODE -ne 0) { throw 'guard still fails after the probe was removed' }
+git status --porcelain=v1 --untracked-files=all | Select-String 'boundary-probe'
 ```
 
-Expected: the first run prints `BOUNDARY_ESCAPE: packages/ai-tooling/boundary-probe.mjs -> ../../packages/runtime-detect/index.js`
-and exits non-zero; the second exits `0`. Confirm with
-`git status --porcelain=v1 --untracked-files=all` that `boundary-probe.mjs` is gone —
-`packages/ai-tooling/**` is not in the manifest and an orphan there would fail the gate.
+Expected: the first run reports a `BOUNDARY_ESCAPE` line naming `boundary-probe.mjs` and exits
+non-zero; the second exits `0`; and the final status prints nothing. The removal happens before the
+`throw` so a failed probe cannot leave an orphan file behind. The path in the message uses native
+separators on Windows (`packages\runtime-detect\...`), because it comes from `node:path`; match on
+the substring, not on the whole line.
+
+**Known limits of this guard, accepted deliberately.** The regex does not strip comments, so a
+commented-out relative import is reported; and it does not match CommonJS `require('../../x')`, so a
+`.cjs` escape is missed. Neither is worth a parser here: this repository is ESM throughout, and a
+false positive is loud and cheap to resolve while the missed case cannot occur without first adding
+CommonJS sources. Revisit if `.cjs` files ever appear.
 
 ---
 
@@ -961,8 +1061,8 @@ turbo 2.10.8 was published 5 days before this plan; `minimumReleaseAge: 4320` (3
 
 ```json
 {
-  "$schema": "https://turborepo.com/schema.json",
-  "globalDependencies": ["tsconfig.json", "biome.json"],
+  "$schema": "https://turborepo.dev/schema.json",
+  "globalDependencies": ["biome.json"],
   "globalEnv": ["CI", "NODE_ENV"],
   "tasks": {
     "build": {
@@ -978,13 +1078,15 @@ turbo 2.10.8 was published 5 days before this plan; `minimumReleaseAge: 4320` (3
       "dependsOn": ["build", "^build"],
       "inputs": ["src/**", "tests/**", "vitest.config.*", "tsconfig.json", "package.json"],
       "outputs": []
-    },
-    "lint": {
-      "inputs": ["src/**", "tests/**", "scripts/**", "biome.json", "package.json"]
     }
   }
 }
 ```
+
+There is no root `tsconfig.json` at the F1 base, so it is absent from `globalDependencies`, and no
+workspace defines a `lint` script, so no `lint` task is declared. Turbo tolerates both, but dead
+configuration in a file nobody runs yet is how a task graph stops describing reality. Add either the
+moment something needs it.
 
 - [ ] **Step 3: install and prove the graph resolves without running anything**
 
@@ -1043,6 +1145,7 @@ All notable changes to this repository are recorded here. Entries are assembled 
 ---
 type: Added
 # scope: ai-tooling   # optional, omit if none
+# ticket: EVK-000     # optional, omit if none
 breaking: false
 ---
 ## changelog
@@ -1050,6 +1153,9 @@ breaking: false
 
 ## notes
 <!-- Optional. Human-readable description for release notes. Remove if developer-internal only. -->
+
+## qa
+<!-- Optional. What to re-test or watch. Remove this section entirely if no QA action is needed. -->
 ```
 
 - [ ] **Step 3: create `changelog.d/README.md`**
@@ -1072,8 +1178,8 @@ directory is dormant until Stage 1 Phase 5 is complete.
 
 ```javascript
 #!/usr/bin/env node
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -1097,8 +1203,8 @@ console.log(`created changelog.d/${slug}.md`);
 
 ```javascript
 #!/usr/bin/env node
-import { readFileSync, readdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -1159,6 +1265,10 @@ Add to root `package.json` `scripts`, keeping the block alphabetically ordered:
 `"changelog:check": "node ./scripts/changelog-assemble.mjs --check"`.
 
 ```powershell
+pnpm -s exec biome check --write scripts
+if ($LASTEXITCODE -ne 0) { throw 'Biome could not make the changelog scripts clean' }
+pnpm -s exec biome check .
+if ($LASTEXITCODE -ne 0) { throw 'the tree is not Biome-clean after writing the changelog scripts' }
 node ./scripts/changelog-new.mjs probe-entry
 if ($LASTEXITCODE -ne 0) { throw 'changelog-new failed' }
 node ./scripts/changelog-assemble.mjs --check
@@ -1237,8 +1347,9 @@ a devkit worker to consult a GitLab pipeline is worse than no skill.
 ```powershell
 node -e "JSON.parse(require('fs').readFileSync('.claude/settings.json','utf8'))"
 if ($LASTEXITCODE -ne 0) { throw '.claude/settings.json is not valid JSON' }
-Select-String -Path .claude/settings.json -Pattern '\*' -Quiet
-if ($LASTEXITCODE -eq 0) { throw 'the allowlist must contain no wildcard' }
+if (Select-String -Path .claude/settings.json -Pattern '\*' -Quiet) {
+  throw 'the allowlist must contain no wildcard'
+}
 git status --porcelain=v1 --untracked-files=all -- .claude
 ```
 
@@ -1423,6 +1534,35 @@ Expected GREEN: no stale pin, exactly 15 new occurrences, and the status lists e
 documents. `PROGRESS.md`, `docs/ai-tooling/research/devkit-baseline.md`, and the foundation design
 must **not** appear — they are historical records and are not in the manifest.
 
+- [ ] **Step 4: amend the `biome.json` body embedded in the Phase 3 document**
+
+`docs/superpowers/plans/2026-08-02-ai-tooling-stage-1-phase-3-implementation.md` contains a literal
+`biome.json` body that Stage 1 Phase 3 will write, and that body still carries
+`"$schema": "https://biomejs.dev/schemas/2.5.6/schema.json"`. Left alone, Phase 3 would overwrite
+Task F1.4's change and reintroduce a versioned URL — and F2's blanket version replacement would
+quietly retarget it to 2.5.7 instead of removing it.
+
+```powershell
+$f = 'docs/superpowers/plans/2026-08-02-ai-tooling-stage-1-phase-3-implementation.md'
+$text = [System.IO.File]::ReadAllText($f)
+$before = ([regex]::Matches($text, 'biomejs\.dev/schemas/[0-9]')).Count
+$text = $text.Replace(
+  '"$schema": "https://biomejs.dev/schemas/2.5.6/schema.json"',
+  '"$schema": "./node_modules/@biomejs/biome/configuration_schema.json"')
+[System.IO.File]::WriteAllText($f, $text)
+$after = ([regex]::Matches([System.IO.File]::ReadAllText($f), 'biomejs\.dev/schemas/[0-9]')).Count
+"versioned schema URLs in the phase 3 document: $before -> $after"
+if ($after -ne 0) { throw 'a versioned Biome schema URL survives in the phase 3 document' }
+```
+
+Expected GREEN: the count drops to `0`.
+
+**Two out-of-manifest pins are accepted, named exceptions.** `packages/ai-tooling/README.md` records
+the toolchain it was written against and lives in the frozen Phase 1 tree, which no foundation phase
+may touch. `configs/biome-config/package.json` declares `engines.pnpm >= 10.28.0`, a published floor
+that pnpm 11.20.0 satisfies and that must not be narrowed for consumers. Any repository-wide
+stale-pin search must exclude both, or it will report them forever.
+
 ---
 
 ### Task F1.12: F1 gate, exact staging, sole commit, owner stop
@@ -1522,7 +1662,10 @@ every staged path is `100644`.
 - [ ] **Step 6: create the single commit**
 
 ```powershell
-$approvedBaseSha = (git rev-parse HEAD).Trim()
+# Assert against the value bound in the Phase Entry Snapshot; do NOT re-bind it here. Re-binding
+# immediately before the commit would make the parent check in Step 7 compare the new commit's
+# parent against a value derived from that same parent, which can never fail.
+if ((git rev-parse HEAD).Trim() -cne $approvedBaseSha) { throw 'HEAD drifted from the bound approved base' }
 if ($approvedBaseSha -cnotmatch '^[0-9a-f]{40}$') { throw 'approved base is not one full lowercase SHA-1' }
 git commit --no-verify -m "chore(repo): establish the repository foundation on pnpm 11"
 $candidateSha = (git rev-parse HEAD).Trim()
@@ -1532,11 +1675,14 @@ if ($candidateSha -cnotmatch '^[0-9a-f]{40}$') { throw 'candidate is not one ful
 - [ ] **Step 7: verify the committed delta and the parent rule**
 
 ```powershell
-$parents = @(git cat-file commit $candidateSha) | Where-Object { $_ -like 'parent *' }
+# The @( ) must wrap the WHOLE pipeline. `@(git ...) | Where-Object` returns a bare String when
+# exactly one line matches — which is the required single-parent case — and then $parents[0] indexes
+# the first character 'p', so the comparison below would always throw on a correct commit.
+$parents = @(@(git cat-file commit $candidateSha) | Where-Object { $_ -like 'parent *' })
 if ($parents.Count -ne 1) { throw "candidate has $($parents.Count) parents, expected exactly 1" }
 if ($parents[0] -cne "parent $approvedBaseSha") { throw 'candidate parent is not the approved base' }
-$names = @(git diff --name-only --no-renames $approvedBaseSha $candidateSha) |
-  Where-Object { $_ -ne '' }
+$names = @(@(git diff --name-only --no-renames $approvedBaseSha $candidateSha) |
+  Where-Object { $_ -ne '' })
 if ($names.Count -ne 40) { throw "committed delta has $($names.Count) paths, expected 40" }
 git diff --stat $approvedBaseSha $candidateSha -- packages/ai-tooling configs/ai
 git status --short --branch
@@ -1673,13 +1819,21 @@ already admits 2.5.7.
 pnpm install --ignore-scripts
 $b = (pnpm -s exec biome --version).Trim()
 if ($b -cne 'Version: 2.5.7') { throw "Biome is '$b', not 2.5.7" }
+# Read-only first. Never let a new formatter version write into the approved Phase 1 tree before
+# knowing whether it wants to: --write would perform exactly the change this step must stop on.
+pnpm -s exec biome check packages/ai-tooling configs/ai
+if ($LASTEXITCODE -ne 0) {
+  throw 'Biome 2.5.7 reports diagnostics inside the approved Phase 1 tree; stop and report'
+}
 pnpm -s exec biome check --write .
 git diff --stat -- packages/ai-tooling configs/ai
 ```
 
-Expected GREEN: Biome reports 2.5.7 and the product-tree diff is **empty**. A single rewritten byte
-under `packages/ai-tooling` or `configs/ai` is a stop: those paths are not in the F2 manifest, and a
-formatter-driven change to the approved Phase 1 tree must be an owner decision.
+Expected GREEN: Biome reports 2.5.7, the scoped read-only check exits `0`, and the product-tree diff
+is **empty**. A single rewritten byte under `packages/ai-tooling` or `configs/ai` is a stop: those
+paths are not in the F2 manifest, and a formatter-driven change to the approved Phase 1 tree must be
+an owner decision. If it happens anyway, recover with
+`git checkout -- packages/ai-tooling configs/ai` before reporting.
 
 - [ ] **Step 3: verify no version reference outside the catalog**
 
@@ -1696,8 +1850,18 @@ Expected GREEN: no match.
 ### Task F2.3: Remaining plan-document amendments
 
 **Files:**
-- Modify: the six `docs/superpowers/plans/2026-08-02-*.md` documents
-- Modify: `package.json` — only if a version string appears there after F1; verify before editing
+- Modify: `docs/superpowers/plans/2026-08-02-ai-tooling-stage-1-phase-1-implementation.md`
+- Modify: `docs/superpowers/plans/2026-08-02-ai-tooling-stage-1-phase-2-implementation.md`
+- Modify: `docs/superpowers/plans/2026-08-02-ai-tooling-stage-1-phase-3-implementation.md`
+- Modify: `docs/superpowers/plans/2026-08-02-ai-tooling-stage-1-phase-4-implementation.md`
+- Modify: `docs/superpowers/plans/2026-08-02-ai-tooling-stage-1-phase-5-implementation.md`
+- Modify: `docs/superpowers/plans/2026-08-02-ai-tooling-stage-1-safe-core-implementation-plan.md`
+
+Root `package.json` is deliberately **not** in this list and not in the F2 manifest. After F1 its
+`devDependencies` read `"typescript": "catalog:"` and `"@biomejs/biome": "catalog:"`, so the F2
+version bump happens entirely in `pnpm-workspace.yaml`; `packageManager` was already settled in F1.
+A manifest is a closed list that must match the delta exactly, so listing a file that does not change
+would fail the gate with a missing path just as surely as an unlisted change would.
 
 - [ ] **Step 1: record before-counts**
 
@@ -1754,20 +1918,21 @@ Expected GREEN: empty output.
 - [ ] **Step 3: formatter, staging, and manifest comparison**
 
 Repeat F1 Task 12 Steps 3 through 5, substituting
-`docs/superpowers/plans/manifests/repository-foundation-f2.txt` and an expected path count of **10**.
+`docs/superpowers/plans/manifests/repository-foundation-f2.txt` and an expected path count of **9**.
 
 - [ ] **Step 4: create the single commit and verify it**
 
 ```powershell
-$approvedBaseSha = (git rev-parse HEAD).Trim()
+if ((git rev-parse HEAD).Trim() -cne $approvedBaseSha) { throw 'HEAD drifted from the bound approved base' }
 git commit --no-verify -m "chore(repo): upgrade to TypeScript 7 and Biome 2.5.7"
 $candidateSha = (git rev-parse HEAD).Trim()
-$parents = @(git cat-file commit $candidateSha) | Where-Object { $_ -like 'parent *' }
+# @( ) wraps the whole pipeline — see the note in F1 Task 12 Step 7.
+$parents = @(@(git cat-file commit $candidateSha) | Where-Object { $_ -like 'parent *' })
 if ($parents.Count -ne 1) { throw "candidate has $($parents.Count) parents, expected exactly 1" }
 if ($parents[0] -cne "parent $approvedBaseSha") { throw 'candidate parent is not the approved base' }
-$names = @(git diff --name-only --no-renames $approvedBaseSha $candidateSha) |
-  Where-Object { $_ -ne '' }
-if ($names.Count -ne 10) { throw "committed delta has $($names.Count) paths, expected 10" }
+$names = @(@(git diff --name-only --no-renames $approvedBaseSha $candidateSha) |
+  Where-Object { $_ -ne '' })
+if ($names.Count -ne 9) { throw "committed delta has $($names.Count) paths, expected 9" }
 ```
 
 - [ ] **Step 5: re-run the gate against the committed tree, then stop**
