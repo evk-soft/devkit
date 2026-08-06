@@ -478,6 +478,38 @@ a later reader sees that they were decided rather than overlooked.
    nothing; extending it is prohibited, and removing it is a product decision about two published
    packages rather than a foundation change.
 
+## Deliberately deferred
+
+Considered for F1 on 2026-08-06 and kept out, with the reason recorded so the question is not
+reopened from scratch.
+
+**Documentation link checking — already product work, not foundation work.** Stage 1 Phase 3 delivers
+`ai-tooling docs check-links` as a CLI command backed by
+`packages/ai-tooling/src/docs/link-checker.ts` and `src/commands/docs.ts`, both in the Phase 3
+manifest. It validates existence, exact filename case, anchors, images, and escapes outside the
+repository root. A `scripts/check-docs-links.mjs` in F1 would be a second, weaker implementation of
+the same thing, competing with the product two phases later. **Follow-up:** once Phase 3 is approved,
+wire `ai-tooling docs check-links` into `pnpm check` and CI. That is self-hosting, which is what the
+Stage 1 design asks for, and it costs a few lines.
+
+A measurement taken while deciding this: devkit currently has **zero** unresolved relative
+documentation links. The six that a naive scan reports sit inside a `~~~json` tilde-fenced block in
+the Phase 3 plan and are the test vectors for the link checker itself.
+
+**Documentation code-path checking — after Stage 1.** A guard asserting that every repository path
+mentioned in the docs exists cannot work while the documentation is dominated by *plans*, which by
+definition reference files that do not exist yet. A naive scan reports 630 "missing" paths that are
+in fact package-relative paths, module specifiers, runtime paths, and files scheduled for later
+phases. Making this useful needs either the reference project's full machinery plus a baseline
+ignore file, or a first-class notion of a planned-but-absent path. Revisit when the documentation
+describes reality rather than intent.
+
+**Release and version management — when there is something to release.** `bump-affected-versions`,
+`check-affected`, and the `release:*` script chain from the reference project serve a workflow devkit
+does not have: all six packages sit at `0.1.0`, nothing has been published, and Stage 1 lists
+publication as a non-goal. Adopting them now would add roughly 30 KB of scripts to support a workflow
+with no first use. This belongs in its own phase alongside the first publication.
+
 ## Open questions
 
 None. All questions raised by this design have been decided.
