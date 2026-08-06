@@ -15,16 +15,53 @@ Working log for the Stage 1 implementation plan. Update this file **only on the 
 - **Owner approval:** granted 2026-08-06 for `ec88ca3` exactly as committed. The deferred hostile
   fixtures and the two type-level assertions listed below were explicitly **not** required first, so
   `ec88ca3` is final and must not be amended.
-- **Next action: repository foundation (F1/F2), not Phase 2.** The owner directed that the
-  repository-foundation track land before Stage 1 continues. See
-  `docs/superpowers/specs/2026-08-06-repository-foundation-design.md`.
+**Foundation phase F1 is complete and owner-approved.** Next action is F2, not Stage 1 Phase 2.
 
-### Branch reconciliation required before F1
+- **F1 commit:** `9b4d455` `chore(repo): establish the repository foundation on pnpm 11` — 40 files,
+  sole parent `8c1ee90`
+- **Approved base:** `8c1ee90` (= `ec88ca3` plus the rebased documentation commits)
+- **Owner approval:** granted 2026-08-06
+- **Execution worktree:** `D:/disk.w/Projects/evk-soft/devkit-worktrees/repository-foundation-f1`,
+  branch `repository-foundation/f1`, clean
+- The plan branch was fast-forwarded to `9b4d455`, so the line stays linear:
+  `b3ec1b2 -> ec88ca3 -> <docs> -> 9b4d455`.
 
-`b3ec1b2` has two children: `ec88ca3` (the phase commit) and `8fa9c76` (this file's plan-branch
-update). They must be linearized before any foundation work, because every later phase base must be
-a single approved commit. The plan-branch commits after `b3ec1b2` touch only `PROGRESS.md`, so
-rebasing them onto `ec88ca3` is sufficient and creates no product-file conflict.
+### Branch reconciliation (F0) — done
+
+`b3ec1b2` had two children: `ec88ca3` and the plan-branch documentation line. Rebasing
+`codex/ai-tooling-design` onto `ec88ca3` linearized them with no conflict; the eight replayed commits
+touched only `docs/**` and reproduced byte-identically.
+
+### Push and PR — a deliberate owner override
+
+The F1 plan forbids pushing. The owner overrode that on 2026-08-06 after being shown that the
+repository is **public** and that 33 commits existed on a single disk. Recorded here so the divergence
+between the written protocol and reality is not a mystery later.
+
+- pushed branches: `repository-foundation/f1` and `codex/ai-tooling-design`. **`main` was not
+  touched** and is still `550a56e`, verified in sync before and after.
+- remote identity verified for fetch and push separately: exactly
+  `https://github.com/evk-soft/devkit.git`, one URL each.
+- draft PR https://github.com/evk-soft/devkit/pull/2, opened for CI validation only, explicitly not
+  for merge. A branch push alone runs nothing: the workflow triggers are `push` on `main` and
+  `pull_request`.
+- **CI run 31106182051 is green on all three jobs**: `windows-latest` 92 s, `ubuntu-latest` 39 s,
+  Bun 9 s. This validated the only parts of F1 that no local check could reach — the new Windows
+  leg, pnpm 11.20.0 provisioned by corepack on a clean runner, `pack:check` under a
+  network-disabled corepack resolution, and the four guard scripts on both platforms. It also closes
+  the design's open question about the Bun job surviving the pnpm upgrade.
+
+### Known issue introduced by F1 — decide before F2
+
+`.husky/post-merge` fires correctly on the first pull that carries the pnpm 11 change, then **fails**
+with `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`: pnpm 11 wants to purge a `node_modules` laid out
+by pnpm 10 and cannot prompt without a TTY. Observed for real when the plan branch was
+fast-forwarded. The merge itself completes and pnpm's message states the remedy, so the impact is one
+confusing hook failure per machine, exactly once, at the 10 -> 11 transition.
+
+Deliberately **not** fixed by amending `9b4d455`: that commit is approved, pushed and CI-green. The
+options are to leave it and document the one-time step, or to add `.husky/post-merge` to the F2
+manifest and make the hook report rather than fail. Owner decision.
 
 Gate evidence, all exit 0 against the committed tree: `typecheck`, `test:unit`, `test:integration`,
 `build`, `pack:check`, `check-stage1-artifacts.mjs --phase 1 --tree`, `pnpm check`,
