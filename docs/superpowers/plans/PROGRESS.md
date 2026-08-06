@@ -5,14 +5,26 @@ Working log for the Stage 1 implementation plan. Update this file **only on the 
 
 ## Current position
 
-**Phase 1 is complete and awaiting owner approval.**
+**Phase 1 is complete and owner-approved.**
 
 - **Phase 1 commit:** `ec88ca3` `feat(ai): establish Stage 1 contracts` — 76 files, sole parent
   `b3ec1b2`
 - **Execution worktree:** `D:/disk.w/Projects/evk-soft/devkit-worktrees/ai-tooling-stage-1-phase-1`,
   branch `ai-tooling/stage-1-phase-1`, clean
 - **Approved base:** `b3ec1b2`
-- **Next action: owner review.** Phase 2 is not authorized until the owner approves this commit.
+- **Owner approval:** granted 2026-08-06 for `ec88ca3` exactly as committed. The deferred hostile
+  fixtures and the two type-level assertions listed below were explicitly **not** required first, so
+  `ec88ca3` is final and must not be amended.
+- **Next action: repository foundation (F1/F2), not Phase 2.** The owner directed that the
+  repository-foundation track land before Stage 1 continues. See
+  `docs/superpowers/specs/2026-08-06-repository-foundation-design.md`.
+
+### Branch reconciliation required before F1
+
+`b3ec1b2` has two children: `ec88ca3` (the phase commit) and `8fa9c76` (this file's plan-branch
+update). They must be linearized before any foundation work, because every later phase base must be
+a single approved commit. The plan-branch commits after `b3ec1b2` touch only `PROGRESS.md`, so
+rebasing them onto `ec88ca3` is sufficient and creates no product-file conflict.
 
 Gate evidence, all exit 0 against the committed tree: `typecheck`, `test:unit`, `test:integration`,
 `build`, `pack:check`, `check-stage1-artifacts.mjs --phase 1 --tree`, `pnpm check`,
