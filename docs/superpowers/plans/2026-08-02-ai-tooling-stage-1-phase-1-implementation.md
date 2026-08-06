@@ -6,7 +6,7 @@
 
 **Architecture:** `configs/ai/**` is the sole canonical EVK content source and `packages/ai-tooling/**` owns parsing, schemas, deterministic bytes, CLI/package boundaries, and validation. Phase 1 deliberately stops before real repository source discovery, project adapters, generated project outputs, or mutation: pack validation/building operates through injected read-only inputs and an explicit trusted temporary destination.
 
-**Tech Stack:** Node.js 24 or later, pnpm 10.28.0 workspace, TypeScript 6.0.3 ESM, Vitest 4.1.10, `@vitest/coverage-v8` 4.1.10, `@types/node` 24.13.3, Ajv 8.20.0 through `ajv/dist/2020.js`, `jsonc-parser` 3.3.1, `json-canonicalize` 2.0.0, JSON Schema draft 2020-12, SHA-256, Biome 2.5.6, and Git 2.45.0 or later for the plan-phase object-reading gates.
+**Tech Stack:** Node.js 24 or later, pnpm 11.20.0 workspace, TypeScript 6.0.3 ESM, Vitest 4.1.10, `@vitest/coverage-v8` 4.1.10, `@types/node` 24.13.3, Ajv 8.20.0 through `ajv/dist/2020.js`, `jsonc-parser` 3.3.1, `json-canonicalize` 2.0.0, JSON Schema draft 2020-12, SHA-256, Biome 2.5.6, and Git 2.45.0 or later for the plan-phase object-reading gates.
 
 ## Global Constraints
 
@@ -57,8 +57,8 @@ if ($LASTEXITCODE -ne 0 -or $nodeVersion -cnotmatch '^v(2[4-9]|[3-9][0-9])\.') {
   throw "baseline Node is '$nodeVersion', not >=24.0.0"
 }
 $pnpmVersion = (pnpm --version).Trim()
-if ($LASTEXITCODE -ne 0 -or $pnpmVersion -cne '10.28.0') {
-  throw "baseline pnpm is '$pnpmVersion', not 10.28.0"
+if ($LASTEXITCODE -ne 0 -or $pnpmVersion -cne '11.20.0') {
+  throw "baseline pnpm is '$pnpmVersion', not 11.20.0"
 }
 $typescriptVersion = (pnpm -s exec tsc --version).Trim()
 if ($LASTEXITCODE -ne 0 -or $typescriptVersion -cne 'Version 6.0.3') {
@@ -875,7 +875,7 @@ Expected RED: exit `1`; the named package test fails because `check-package-cont
 
 The script creates an exclusive owner-only staging root; compiles TypeScript directly into its `dist`; copies only `package.json`, `README.md`, `LICENSE`, and source schema bytes; creates one contained empty `packed` destination; resolves the already installed pnpm JavaScript entry; launches `process.execPath` with exact argv `pack --json --pack-destination` followed by the validated absolute `packed` child path, `shell: false`, no stdin, staging `cwd`, a 300-second monotonic deadline, a 64 MiB stdout JSON limit, and a 64 KiB stderr ring.
 
-`pnpm pack` in the pinned 10.28.0 accepts only `--dry-run`, `--json`, `--out`, `--pack-destination`, `-r`, and `--workspace-concurrency`; passing `--ignore-scripts` or `--ignore-pnpmfile` to it fails with `Unknown options`. Script and pnpmfile suppression is therefore carried by the mandatory `npm_config_ignore_scripts=true` and `npm_config_ignore_pnpmfile=true` entries in the frozen environment below, which pnpm does honour. Do not reintroduce those flags into the argv. The environment starts empty and contains only private config/cache/temp values, `npm_config_ignore_scripts=true`, `npm_config_ignore_pnpmfile=true`, and fixed POSIX locale/PATH values where required; Windows deliberately receives no caller `SystemRoot`, `WINDIR`, `PATH`, or `PATHEXT` in Phase 1.
+`pnpm pack` in the pinned 11.20.0 accepts only `--dry-run`, `--json`, `--out`, `--pack-destination`, `-r`, and `--workspace-concurrency`; passing `--ignore-scripts` or `--ignore-pnpmfile` to it fails with `Unknown options`. Script and pnpmfile suppression is therefore carried by the mandatory `npm_config_ignore_scripts=true` and `npm_config_ignore_pnpmfile=true` entries in the frozen environment below, which pnpm does honour. Do not reintroduce those flags into the argv. The environment starts empty and contains only private config/cache/temp values, `npm_config_ignore_scripts=true`, `npm_config_ignore_pnpmfile=true`, and fixed POSIX locale/PATH values where required; Windows deliberately receives no caller `SystemRoot`, `WINDIR`, `PATH`, or `PATHEXT` in Phase 1.
 
 The gzip/tar parser enforces: 64 MiB compressed; one gzip member; valid flags/header CRC/data CRC/ISIZE; 4 KiB optional header; exact EOF; 256 MiB inflated; 100,000 entries; 16 MiB per regular file; 4 KiB per path; 16 MiB aggregate path bytes; 100,000 per-file PAX records; 16 KiB per PAX record; and 16 MiB aggregate PAX bytes. It accepts regular files, zero-size directories, and unique canonical per-file PAX `path`/`size`; it rejects links, sparse/device/FIFO/unknown types, global/GNU headers, unsafe or duplicate paths, chained overrides, invalid octal/base-256, nonzero padding, absent end blocks, trailing data, and every size/count one-over case.
 

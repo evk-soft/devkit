@@ -6,7 +6,7 @@
 
 **Architecture:** One read-only repository context owns a frozen Git provider, containment-aware filesystem, and one monotonic command budget. The pure pipeline strict-loads the Phase 1 config, rejects unavailable source/lifecycle capabilities, proves and hashes the exact tracked local pack, loads contained committed overrides, resolves one effective catalog, inventories actual assets independently of declarations, negotiates instruction-only capabilities, calls an injected adapter-neutral renderer, and returns a deterministic candidate plus proposed diff without a write-capable port.
 
-**Tech Stack:** Node.js 24 or later, pnpm 10.28.0 workspace, TypeScript 6.0.3 ESM, Vitest 4.1.10, Phase 1 Ajv/jsonc-parser/json-canonicalize contracts, `@unicode/unicode-17.0.0` 1.6.17 as a development-only cross-check, vendored Unicode 17.0.0 normative data, Git 2.36.0 or later for closed runtime reads and Git 2.45.0 or later for approved-base verifier/object modes, SHA-256 and RFC 8785 JCS, one internal Win32 C++ identity helper built with MSVC, and Node's `performance`, `v8`, and `--expose-gc` APIs for the standalone resolver budget.
+**Tech Stack:** Node.js 24 or later, pnpm 11.20.0 workspace, TypeScript 6.0.3 ESM, Vitest 4.1.10, Phase 1 Ajv/jsonc-parser/json-canonicalize contracts, `@unicode/unicode-17.0.0` 1.6.17 as a development-only cross-check, vendored Unicode 17.0.0 normative data, Git 2.36.0 or later for closed runtime reads and Git 2.45.0 or later for approved-base verifier/object modes, SHA-256 and RFC 8785 JCS, one internal Win32 C++ identity helper built with MSVC, and Node's `performance`, `v8`, and `--expose-gc` APIs for the standalone resolver budget.
 
 ## Global Constraints
 

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "globalDependencies": ["biome.json"],
+  "globalEnv": ["CI", "NODE_ENV"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tsconfig.json", "package.json"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tests/**", "scripts/**", "tsconfig.json", "package.json"]
+    },
+    "test": {
+      "dependsOn": ["build", "^build"],
+      "inputs": ["src/**", "tests/**", "vitest.config.*", "tsconfig.json", "package.json"],
+      "outputs": []
+    }
+  }
+}

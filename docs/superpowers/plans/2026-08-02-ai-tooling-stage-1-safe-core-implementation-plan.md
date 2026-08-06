@@ -16,7 +16,7 @@ applies it through one containment and transaction boundary. Platform outputs an
 plan acceptance, not a new recovery protocol or an extra root-level lock; the approved
 `.ai-tooling/run.lock` remains the sole transaction authority.
 
-**Tech Stack:** Node.js 24+, TypeScript 6.0.3 ESM, pnpm 10.28.0, Vitest 4.1.10, Ajv 8.20.0,
+**Tech Stack:** Node.js 24+, TypeScript 6.0.3 ESM, pnpm 11.20.0, Vitest 4.1.10, Ajv 8.20.0,
 `jsonc-parser` 3.3.1, `json-canonicalize` 2.0.0, JSON Schema draft 2020-12, Unicode 17.0.0 data,
 Biome 2.5.6, Git 2.36.0+ for runtime index/census queries, Git 2.45.0+ for plan-phase and artifact
 object-reading gates, and one internal Win32 C++ helper built with the GitHub Windows runner's
@@ -103,7 +103,7 @@ git commit --no-verify -m "docs(ai): add Stage 1 implementation plan"
   change. Do not use `git stash` and do not mix either set into a Stage 1 phase commit.
 - Re-freeze `branch`, `HEAD`, `main`, `git status --short --branch`, and `git log --oneline
   main..HEAD` after that decision.
-- Confirm that the execution baseline contains Node `>=24.0.0`, pnpm `10.28.0`, TypeScript
+- Confirm that the execution baseline contains Node `>=24.0.0`, pnpm `11.20.0`, TypeScript
   `6.0.3`, and Biome `2.5.6`. If the owner baseline differs, stop and update this plan before coding.
 
 ### 0.3 Per-phase worktree and commit protocol
@@ -554,7 +554,7 @@ The Phase 3 human-authored root `biome.json` change adds this exact Biome 2.5 sh
 The list deliberately uses ordered force-ignore exclusions because these instruction/lock artifacts
 provide no source-type information and must be excluded from scanning as well as check, format, lint,
 and assist actions. The Phase 3 workflow uses an explicit matrix for `ubuntu-24.04` x64,
-`windows-2025` x64, and `macos-15` arm64, Node 24, pnpm 10.28.0, `HUSKY=0`, frozen install, package
+`windows-2025` x64, and `macos-15` arm64, Node 24, pnpm 11.20.0, `HUSKY=0`, frozen install, package
 build, unit/integration/native tests, and read-only CLI fixtures. It never executes a real self-host
 mutation.
 
@@ -3972,7 +3972,7 @@ const precedence = [
   only `actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683` (reviewed v4.2.2) and
   `actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020` (reviewed v4.4.0), with
   `persist-credentials: false`, no action cache, `corepack enable`, and
-  `corepack install --global pnpm@10.28.0`. Record the official reviewed commit URLs
+  `corepack install --global pnpm@11.20.0`. Record the official reviewed commit URLs
   `https://github.com/actions/checkout/commit/11bd71901bbe5b1630ceea73d27597364c9af683` and
   `https://github.com/actions/setup-node/commit/49933ea5288caeca8642d1e84afbd3f7d6820020`
   plus `https://docs.github.com/en/actions/reference/runners/github-hosted-runners` and the workflow

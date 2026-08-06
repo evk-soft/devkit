@@ -1,0 +1,18 @@
+# Editor configuration, see https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+# 100 matches configs/biome-config/biome.preset.json lineWidth. Do not raise this to 120 without
+# raising the formatter too, or the editor guide will advertise a width the formatter rejects.
+max_line_length = 100
+
+[*.md]
+# Markdown uses two trailing spaces as a hard line break.
+max_line_length = off
+trim_trailing_whitespace = false

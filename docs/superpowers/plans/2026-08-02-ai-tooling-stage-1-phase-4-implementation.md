@@ -15,7 +15,7 @@ atomic per-path changes, lock-last verification, a terminal frame, and evidence 
 strictly classifies existing bytes and may continue only through branded authorities derived from the
 accepted plan and revalidated evidence; a third or ambiguous state is preserved and blocks.
 
-**Tech Stack:** Node.js 24+, TypeScript 6.0.3 ESM, pnpm 10.28.0, Vitest 4.1.10, strict standard
+**Tech Stack:** Node.js 24+, TypeScript 6.0.3 ESM, pnpm 11.20.0, Vitest 4.1.10, strict standard
 JSON, RFC 8785 JCS, SHA-256, Git 2.36.0+ runtime read-only queries, Git 2.45.0+ phase-verifier object
 reads, the existing Phase 3 Unicode 17 portable path key, POSIX `open`/`link`/`rename`/`fsync`, and
 the existing internal Win32 C++ helper extended with no-replace move and process-identity operations.
@@ -4337,7 +4337,7 @@ Expected RED: exit `1`; the existing workflow lacks the exact Phase 4 suite comm
 
 Add this exact step once inside the existing three-row matrix job after native build and before the
 final real-checkout census comparison. Keep action SHA pins, read-only permissions, `fail-fast: false`,
-Node 24, pnpm 10.28.0, `HUSKY: '0'`, frozen `--ignore-scripts` install, and the Phase 3 checkout
+Node 24, pnpm 11.20.0, `HUSKY: '0'`, frozen `--ignore-scripts` install, and the Phase 3 checkout
 baseline. The job invokes no real-checkout mutator; fixtures create their own roots/homes.
 
 The new `USER-GUIDE.md` headings are exactly:

@@ -11,7 +11,7 @@ engine against a disposable self-host repository before touching devkit. Real de
 only the reviewed tracked local pack and one reviewed override; generated leaves and the repository
 lock are created by the workspace CLI and never hand-edited.
 
-**Tech Stack:** Node.js 24+, TypeScript 6.0.3 ESM, pnpm 10.28.0, Vitest 4.1.10, Git 2.45.0+ for
+**Tech Stack:** Node.js 24+, TypeScript 6.0.3 ESM, pnpm 11.20.0, Vitest 4.1.10, Git 2.45.0+ for
 artifact-object reads, JSON Schema draft 2020-12, Biome 2.5.6, and the Phase 4 journaled mutation
 engine.
 
@@ -1172,7 +1172,7 @@ Expected: exit `1`; the final command sequence or Phase 5 package step is missin
 - [ ] **Step 3: Write the exact final workflow command sequence**
 
 Retain the existing matrix rows `ubuntu-24.04/linux/x64`, `windows-2025/win32/x64`, and
-`macos-15/darwin/arm64`, Node 24 and pnpm 10.28.0. The real-checkout run block is exactly:
+`macos-15/darwin/arm64`, Node 24 and pnpm 11.20.0. The real-checkout run block is exactly:
 
 ```yaml
 - run: node packages/ai-tooling/dist/cli.js check --ci

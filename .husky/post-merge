@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+
+# See .husky/post-checkout for why the worktree guard is structural rather than based on arguments.
+#
+# Explicit `if` rather than `[ ... ] && exit 0`: husky runs hooks through `sh -e`, where an AND-list
+# with a false left side yields status 1.
+if [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]; then exit 0; fi
+if [ "${SKIP_HUSKY_AUTO_SYNC:-0}" = "1" ]; then exit 0; fi
+
+CHANGED_FILES="$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD 2>/dev/null || true)"
+[ -n "$CHANGED_FILES" ] || exit 0
+
+if printf '%s\n' "$CHANGED_FILES" | grep -Eq '(^pnpm-lock\.yaml$|^pnpm-workspace\.yaml$|^\.npmrc$|(^|/)package\.json$)'; then
+  echo "Merge completed - dependency metadata changed; running pnpm install..."
+  pnpm install --frozen-lockfile || exit 1
+fi
