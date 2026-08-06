@@ -15,7 +15,7 @@ atomic per-path changes, lock-last verification, a terminal frame, and evidence 
 strictly classifies existing bytes and may continue only through branded authorities derived from the
 accepted plan and revalidated evidence; a third or ambiguous state is preserved and blocks.
 
-**Tech Stack:** Node.js 24+, TypeScript 6.0.3 ESM, pnpm 11.20.0, Vitest 4.1.10, strict standard
+**Tech Stack:** Node.js 24+, TypeScript 7.0.2 ESM, pnpm 11.20.0, Vitest 4.1.10, strict standard
 JSON, RFC 8785 JCS, SHA-256, Git 2.36.0+ runtime read-only queries, Git 2.45.0+ phase-verifier object
 reads, the existing Phase 3 Unicode 17 portable path key, POSIX `open`/`link`/`rename`/`fsync`, and
 the existing internal Win32 C++ helper extended with no-replace move and process-identity operations.

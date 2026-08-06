@@ -14,7 +14,7 @@ and budget. Formatter checks copy only registered leaves into a disposable check
 provider under bounded process-tree control, compare bracketed pre/post checkout censuses, and report a
 closed outcome; the real checkout remains read-only throughout Phase 3.
 
-**Tech Stack:** Node.js 24 or later, pnpm 11.20.0 workspace, TypeScript 6.0.3 ESM, Vitest 4.1.10,
+**Tech Stack:** Node.js 24 or later, pnpm 11.20.0 workspace, TypeScript 7.0.2 ESM, Vitest 4.1.10,
 Phase 1 strict JSON/JCS/diagnostic contracts, Phase 2 Unicode 17 portable paths and frozen Git provider,
 Biome 2.5.6, Git 2.36.0 or later for runtime index/census queries, Git 2.45.0 or later for phase and
 artifact object-reading gates, POSIX process groups, one internal Win32 C++ Job Object helper built

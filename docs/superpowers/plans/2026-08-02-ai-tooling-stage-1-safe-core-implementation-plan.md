@@ -16,7 +16,7 @@ applies it through one containment and transaction boundary. Platform outputs an
 plan acceptance, not a new recovery protocol or an extra root-level lock; the approved
 `.ai-tooling/run.lock` remains the sole transaction authority.
 
-**Tech Stack:** Node.js 24+, TypeScript 6.0.3 ESM, pnpm 11.20.0, Vitest 4.1.10, Ajv 8.20.0,
+**Tech Stack:** Node.js 24+, TypeScript 7.0.2 ESM, pnpm 11.20.0, Vitest 4.1.10, Ajv 8.20.0,
 `jsonc-parser` 3.3.1, `json-canonicalize` 2.0.0, JSON Schema draft 2020-12, Unicode 17.0.0 data,
 Biome 2.5.6, Git 2.36.0+ for runtime index/census queries, Git 2.45.0+ for plan-phase and artifact
 object-reading gates, and one internal Win32 C++ helper built with the GitHub Windows runner's
@@ -104,7 +104,7 @@ git commit --no-verify -m "docs(ai): add Stage 1 implementation plan"
 - Re-freeze `branch`, `HEAD`, `main`, `git status --short --branch`, and `git log --oneline
   main..HEAD` after that decision.
 - Confirm that the execution baseline contains Node `>=24.0.0`, pnpm `11.20.0`, TypeScript
-  `6.0.3`, and Biome `2.5.6`. If the owner baseline differs, stop and update this plan before coding.
+  `7.0.2`, and Biome `2.5.6`. If the owner baseline differs, stop and update this plan before coding.
 
 ### 0.3 Per-phase worktree and commit protocol
 
