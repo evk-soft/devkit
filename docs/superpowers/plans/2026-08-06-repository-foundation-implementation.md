@@ -382,6 +382,12 @@ integrity-hash form `pnpm@11.20.0+sha512-…` is rejected by
 - [ ] **Step 4: regenerate the lockfile and prove the settings took effect**
 
 ```powershell
+# A pnpm MAJOR upgrade wants to purge a node_modules laid out by the previous major, and it aborts
+# with ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY when it cannot prompt. Remove the directory
+# explicitly rather than setting CI=true or adding a confirmModulesPurge setting this plan never
+# declares. node_modules is ignored, so this cannot affect the phase delta.
+Get-ChildItem -Recurse -Directory -Filter 'node_modules' -Depth 2 |
+  ForEach-Object { Remove-Item -Recurse -Force $_.FullName }
 corepack prepare pnpm@11.20.0 --activate
 if ($LASTEXITCODE -ne 0) { throw 'corepack prepare failed' }
 $pm = (Get-Content package.json | Select-String '"packageManager"').Line
@@ -1681,7 +1687,10 @@ if ($candidateSha -cnotmatch '^[0-9a-f]{40}$') { throw 'candidate is not one ful
 $parents = @(@(git cat-file commit $candidateSha) | Where-Object { $_ -like 'parent *' })
 if ($parents.Count -ne 1) { throw "candidate has $($parents.Count) parents, expected exactly 1" }
 if ($parents[0] -cne "parent $approvedBaseSha") { throw 'candidate parent is not the approved base' }
-$names = @(@(git diff --name-only --no-renames $approvedBaseSha $candidateSha) |
+# The trailing `--` is required. Without it git reports
+# "ambiguous argument <sha>: both revision and filename" as soon as anything in the working
+# directory shares a name with the revision — observed during F1 execution.
+$names = @(@(git diff --name-only --no-renames $approvedBaseSha $candidateSha --) |
   Where-Object { $_ -ne '' })
 if ($names.Count -ne 40) { throw "committed delta has $($names.Count) paths, expected 40" }
 git diff --stat $approvedBaseSha $candidateSha -- packages/ai-tooling configs/ai
@@ -1930,7 +1939,7 @@ $candidateSha = (git rev-parse HEAD).Trim()
 $parents = @(@(git cat-file commit $candidateSha) | Where-Object { $_ -like 'parent *' })
 if ($parents.Count -ne 1) { throw "candidate has $($parents.Count) parents, expected exactly 1" }
 if ($parents[0] -cne "parent $approvedBaseSha") { throw 'candidate parent is not the approved base' }
-$names = @(@(git diff --name-only --no-renames $approvedBaseSha $candidateSha) |
+$names = @(@(git diff --name-only --no-renames $approvedBaseSha $candidateSha --) |
   Where-Object { $_ -ne '' })
 if ($names.Count -ne 9) { throw "committed delta has $($names.Count) paths, expected 9" }
 ```
