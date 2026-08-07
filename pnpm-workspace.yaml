@@ -16,7 +16,8 @@ sharedWorkspaceLockfile: true
 allowBuilds: {}
 # 4320 minutes = 3 days. Chosen against measured publish dates rather than copied: a 7-day delay
 # would have blocked turbo 2.10.8, which was 5 days old when this plan was written, and pnpm's own
-# default of 1440 admits a next-day malicious publish. Re-check this value at the F2 entry snapshot.
+# default of 1440 admits a next-day malicious publish. Re-checked when Biome 2.5.7 was adopted: it had
+# to wait 3 days for the threshold and was admitted at 4411 minutes, so the value holds as chosen.
 minimumReleaseAge: 4320
 
 # --- Dependency single-sourcing ---
@@ -27,7 +28,7 @@ minimumReleaseAge: 4320
 catalogMode: strict
 
 catalog:
-  '@biomejs/biome': ^2.5.6
+  '@biomejs/biome': ^2.5.7
   husky: ^9.1.7
   turbo: ^2.10.8
   typescript: ^7.0.2
