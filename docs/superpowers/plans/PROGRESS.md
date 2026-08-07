@@ -1,57 +1,86 @@
 # Stage 1 execution progress
 
-Working log for the Stage 1 implementation plan. Update this file **only on the plan branch**
-(`codex/ai-tooling-design`), never inside a phase execution worktree.
+Working log for the Stage 1 implementation plan. Everything below is delivered; update this file in
+the same pull request as the work it describes, never inside a phase execution worktree.
 
 ## Current position
 
-**Phase 1 is complete and owner-approved.**
+**Stage 1 Phase 1 and both foundation phases are delivered and merged into `main`.** The next
+product work is Stage 1 Phase 2.
 
-- **Phase 1 commit:** `ec88ca3` `feat(ai): establish Stage 1 contracts` — 76 files, sole parent
-  `b3ec1b2`
-- **Execution worktree:** `D:/disk.w/Projects/evk-soft/devkit-worktrees/ai-tooling-stage-1-phase-1`,
-  branch `ai-tooling/stage-1-phase-1`, clean
-- **Approved base:** `b3ec1b2`
-- **Owner approval:** granted 2026-08-06 for `ec88ca3` exactly as committed. The deferred hostile
-  fixtures and the two type-level assertions listed below were explicitly **not** required first, so
-  `ec88ca3` is final and must not be amended.
-**Foundation phase F1 is complete and owner-approved.** Next action is F2, not Stage 1 Phase 2.
+`main` history, two squash commits over the pre-existing baseline:
 
-- **F1 commit:** `9b4d455` `chore(repo): establish the repository foundation on pnpm 11` — 40 files,
-  sole parent `8c1ee90`
-- **Approved base:** `8c1ee90` (= `ec88ca3` plus the rebased documentation commits)
-- **Owner approval:** granted 2026-08-06
-- **Execution worktree:** `D:/disk.w/Projects/evk-soft/devkit-worktrees/repository-foundation-f1`,
-  branch `repository-foundation/f1`, clean
-- The plan branch was fast-forwarded to `9b4d455`, so the line stays linear:
-  `b3ec1b2 -> ec88ca3 -> <docs> -> 9b4d455`.
+| `main` commit | Contents |
+|---|---|
+| `bb7ba9e` | `feat: establish the Stage 1 safe core and the pnpm 11 repository foundation` |
+| `879cedd` | `chore: upgrade to TypeScript 7 and record the F1 execution findings` |
+
+### The approved phase commits live in tags, not in `main`'s ancestry
+
+Merging is squash-only, so the gated per-phase commits are **not** ancestors of `main`, and their
+branches were deleted on merge. They remain reachable forever through annotated tags. Any SHA this
+file quotes resolves through them:
+
+| Tag | Commit | What it is |
+|---|---|---|
+| `stage-1/phase-1` | `ec88ca3` | Stage 1 Phase 1 — 76 files, sole parent `b3ec1b2`, 128 tests |
+| `foundation/f1` | `9b4d455` | Foundation F1 — 40 files, sole parent `8c1ee90` |
+| `foundation/f2` | `73712d9` | Foundation F2 — 9 files, sole parent `1202160` |
+
+Tagging happened deliberately **before** the first squash. Without it the squash plus
+delete-on-merge would have made every approved commit unreachable on the remote, and this file would
+be quoting SHAs that no longer resolve.
+
+### Working shape from here
+
+The plan branch and the phase worktrees are gone; their content is all in `main`. GitHub now enforces
+what the phase protocol used to enforce by hand: `main` requires a pull request, three green checks
+on Linux and Windows, linear history, and no force-push or deletion. So the rhythm is a branch off
+`main`, one gated phase, one pull request, squash.
+
+The per-phase manifest discipline still applies to Stage 1 phases, because it is what guarantees a
+phase changed exactly the paths it declared.
 
 ### Branch reconciliation (F0) — done
 
-`b3ec1b2` had two children: `ec88ca3` and the plan-branch documentation line. Rebasing
-`codex/ai-tooling-design` onto `ec88ca3` linearized them with no conflict; the eight replayed commits
-touched only `docs/**` and reproduced byte-identically.
+`b3ec1b2` had two children: `ec88ca3` and the plan-branch documentation line. Rebasing the plan
+branch onto `ec88ca3` linearized them with no conflict; the eight replayed commits touched only
+`docs/**` and reproduced byte-identically.
 
-### Push and PR — a deliberate owner override
+### Push, PR and merge — a deliberate owner override of the plan
 
-The F1 plan forbids pushing. The owner overrode that on 2026-08-06 after being shown that the
-repository is **public** and that 33 commits existed on a single disk. Recorded here so the divergence
+The foundation plan forbids pushing. The owner overrode that on 2026-08-06 after being shown that the
+repository is **public** and that 33 commits existed on a single disk. Recorded so the divergence
 between the written protocol and reality is not a mystery later.
 
-- pushed branches: `repository-foundation/f1` and `codex/ai-tooling-design`. **`main` was not
-  touched** and is still `550a56e`, verified in sync before and after.
-- remote identity verified for fetch and push separately: exactly
+- remote identity verified for fetch and push separately before every push: exactly
   `https://github.com/evk-soft/devkit.git`, one URL each.
-- draft PR https://github.com/evk-soft/devkit/pull/2, opened for CI validation only, explicitly not
-  for merge. A branch push alone runs nothing: the workflow triggers are `push` on `main` and
-  `pull_request`.
-- **CI run 31106182051 is green on all three jobs**: `windows-latest` 92 s, `ubuntu-latest` 39 s,
-  Bun 9 s. This validated the only parts of F1 that no local check could reach — the new Windows
-  leg, pnpm 11.20.0 provisioned by corepack on a clean runner, `pack:check` under a
-  network-disabled corepack resolution, and the four guard scripts on both platforms. It also closes
-  the design's open question about the Bun job surviving the pnpm upgrade.
+- **CI validated the only parts of F1 no local check could reach** — the new Windows leg,
+  pnpm 11.20.0 provisioned by corepack on a clean runner, `pack:check` under a network-disabled
+  corepack resolution, and the four guard scripts on both platforms. That also closed the design's
+  open question about the Bun job surviving the pnpm upgrade.
+- merged as two pull requests rather than one, so `main` gained two coherent commits instead of a
+  single 36-commit squash. Everything before F1 could not have been merged under the current
+  protection: its workflow produced neither `Node 24 (pnpm) - ubuntu-latest` nor
+  `- windows-latest`, and used mutable action tags, both of which F1 itself introduced. Splitting
+  further would have required weakening the protection that had just been enabled.
+- after each squash, the remaining branch was rebased with `git rebase --onto origin/main <old-base>`.
+  A plain `git rebase` picks the wrong merge base once a squash commit exists and tries to replay the
+  entire history — that happened once and was aborted with the tree verified intact.
 
-### Known issue introduced by F1 — decide before F2
+### Repository settings, applied 2026-08-06
+
+Merge methods reduced to squash only with delete-on-merge; Dependabot alerts and automatic security
+updates enabled; Actions restricted to GitHub-owned, verified publishers and `oven-sh/setup-bun@*`,
+with **SHA pinning required**, which turns F1's hand-pinning into a rule a future edit cannot undo;
+`main` protected. Secret scanning, push protection and a read-only default workflow token were
+already on. CI was re-run afterwards and stayed green, confirming the Actions restriction did not
+lock out the repository's own workflow.
+
+`enforce_admins` is deliberately off: the protection guards against accident, not against the owner.
+Turn it on when a second maintainer exists.
+
+### Known issue introduced by F1 — decided, documented, left in place
 
 `.husky/post-merge` fires correctly on the first pull that carries the pnpm 11 change, then **fails**
 with `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`: pnpm 11 wants to purge a `node_modules` laid out
@@ -59,9 +88,18 @@ by pnpm 10 and cannot prompt without a TTY. Observed for real when the plan bran
 fast-forwarded. The merge itself completes and pnpm's message states the remedy, so the impact is one
 confusing hook failure per machine, exactly once, at the 10 -> 11 transition.
 
-Deliberately **not** fixed by amending `9b4d455`: that commit is approved, pushed and CI-green. The
-options are to leave it and document the one-time step, or to add `.husky/post-merge` to the F2
-manifest and make the hook report rather than fail. Owner decision.
+Owner decision, 2026-08-06: leave the hook as it is and document the one-time step, which `README.md`
+now does. Suppressing the prompt with `confirmModulesPurge` or `CI=true` would remove a real safety
+check on every future install in order to smooth a single transition.
+
+### Outstanding
+
+- **Biome 2.5.6 -> 2.5.7.** Blocked by the repository's own `minimumReleaseAge` of 4320 minutes:
+  2.5.7 was published 2026-08-04 13:23 UTC and clears the threshold on 2026-08-07 13:23 UTC. 2.5.6 is
+  the newest release that currently clears it, which is where the catalog already points. This is the
+  supply-chain delay working as designed on its first real encounter, so the bump waits rather than
+  the threshold being weakened. It is one catalog line plus the nine `2.5.6` pins in the six Stage 1
+  plan documents, which are correct as they stand.
 
 Gate evidence, all exit 0 against the committed tree: `typecheck`, `test:unit`, `test:integration`,
 `build`, `pack:check`, `check-stage1-artifacts.mjs --phase 1 --tree`, `pnpm check`,
