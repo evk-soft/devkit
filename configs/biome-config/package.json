@@ -19,6 +19,9 @@
   "peerDependencies": {
     "@biomejs/biome": "^2.3.11"
   },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:"
+  },
   "main": "./biome.preset.json",
   "exports": {
     ".": "./biome.preset.json",

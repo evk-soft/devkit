@@ -6,7 +6,7 @@
 
 **Architecture:** `configs/ai/**` is the sole canonical EVK content source and `packages/ai-tooling/**` owns parsing, schemas, deterministic bytes, CLI/package boundaries, and validation. Phase 1 deliberately stops before real repository source discovery, project adapters, generated project outputs, or mutation: pack validation/building operates through injected read-only inputs and an explicit trusted temporary destination.
 
-**Tech Stack:** Node.js 24 or later, pnpm 11.20.0 workspace, TypeScript 7.0.2 ESM, Vitest 4.1.10, `@vitest/coverage-v8` 4.1.10, `@types/node` 24.13.3, Ajv 8.20.0 through `ajv/dist/2020.js`, `jsonc-parser` 3.3.1, `json-canonicalize` 2.0.0, JSON Schema draft 2020-12, SHA-256, Biome 2.5.6, and Git 2.45.0 or later for the plan-phase object-reading gates.
+**Tech Stack:** Node.js 24 or later, pnpm 11.20.0 workspace, TypeScript 7.0.2 ESM, Vitest 4.1.10, `@vitest/coverage-v8` 4.1.10, `@types/node` 24.13.3, Ajv 8.20.0 through `ajv/dist/2020.js`, `jsonc-parser` 3.3.1, `json-canonicalize` 2.0.0, JSON Schema draft 2020-12, SHA-256, Biome 2.5.7, and Git 2.45.0 or later for the plan-phase object-reading gates.
 
 ## Global Constraints
 
@@ -49,7 +49,7 @@ Expected GREEN: every command exits `0`; `git rev-parse HEAD` equals `$approvedB
 
 - [ ] **Step 2: prove the approved baseline carries the exact Tech Stack toolchain**
 
-The owner tooling baseline required by master section 0.2 is a separate commit from the plan-bundle commit, and only it raises the checkout to TypeScript 7.0.2 and Biome 2.5.6. Binding `$approvedBaseSha` alone cannot detect a baseline taken before that commit, so run these assertions in the same PowerShell session, after the Step 1 install:
+The owner tooling baseline required by master section 0.2 is a separate commit from the plan-bundle commit, and only it raises the checkout to TypeScript 7.0.2 and Biome 2.5.7. Binding `$approvedBaseSha` alone cannot detect a baseline taken before that commit, so run these assertions in the same PowerShell session, after the Step 1 install:
 
 ```powershell
 $nodeVersion = (node --version).Trim()
@@ -65,8 +65,8 @@ if ($LASTEXITCODE -ne 0 -or $typescriptVersion -cne 'Version 7.0.2') {
   throw "baseline TypeScript is '$typescriptVersion', not 7.0.2"
 }
 $biomeVersion = (pnpm -s exec biome --version).Trim()
-if ($LASTEXITCODE -ne 0 -or $biomeVersion -cne 'Version: 2.5.6') {
-  throw "baseline Biome is '$biomeVersion', not 2.5.6"
+if ($LASTEXITCODE -ne 0 -or $biomeVersion -cne 'Version: 2.5.7') {
+  throw "baseline Biome is '$biomeVersion', not 2.5.7"
 }
 ```
 

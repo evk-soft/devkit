@@ -12,7 +12,7 @@ only the reviewed tracked local pack and one reviewed override; generated leaves
 lock are created by the workspace CLI and never hand-edited.
 
 **Tech Stack:** Node.js 24+, TypeScript 7.0.2 ESM, pnpm 11.20.0, Vitest 4.1.10, Git 2.45.0+ for
-artifact-object reads, JSON Schema draft 2020-12, Biome 2.5.6, and the Phase 4 journaled mutation
+artifact-object reads, JSON Schema draft 2020-12, Biome 2.5.7, and the Phase 4 journaled mutation
 engine.
 
 ## Global Constraints

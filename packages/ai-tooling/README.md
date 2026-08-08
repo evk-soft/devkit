@@ -24,8 +24,10 @@ stderr and exits with code `2`.
 
 ## Requirements
 
-Node.js `>=24.0.0`. The workspace pins pnpm `10.28.0`, TypeScript `6.0.3`, Biome `2.5.6`, and Vitest
-`4.1.10`.
+Node.js `>=24.0.0`, as declared by this package's `engines.node`. The shared repository toolchain —
+pnpm, TypeScript, and Biome — is single-sourced in the `catalog` block of `pnpm-workspace.yaml` and is
+deliberately not restated here, so that this document cannot drift out of step with it. This package's
+own dependencies are pinned literally in its `package.json`, including Vitest `4.1.10`.
 
 ## Intended exports
 

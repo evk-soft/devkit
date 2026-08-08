@@ -92,16 +92,101 @@ Owner decision, 2026-08-06: leave the hook as it is and document the one-time st
 now does. Suppressing the prompt with `confirmModulesPurge` or `CI=true` would remove a real safety
 check on every future install in order to smooth a single transition.
 
-### Outstanding
+### Biome 2.5.7 — the deferred half of F2, delivered 2026-08-07
 
-- **Biome 2.5.6 -> 2.5.7.** Blocked by the repository's own `minimumReleaseAge` of 4320 minutes:
-  2.5.7 was published 2026-08-04 13:23 UTC and clears the threshold on 2026-08-07 13:23 UTC. 2.5.6 is
-  the newest release that currently clears it, which is where the catalog already points. This is the
-  supply-chain delay working as designed on its first real encounter, so the bump waits rather than
-  the threshold being weakened. It is one catalog line plus the nine `2.5.6` pins in the six Stage 1
-  plan documents, which are correct as they stand.
+F2 shipped TypeScript 7 alone because `minimumReleaseAge: 4320` still rejected Biome 2.5.7 at the
+time. The delay expired on 2026-08-07 and the bump landed as its own pull request off `main`: one
+catalog line in `pnpm-workspace.yaml`, the resulting `pnpm-lock.yaml`, and the nine `2.5.6` pins in
+**four** of the six Stage 1 plan documents — the Phase 2 and Phase 4 plans never named a Biome
+version, so listing all six would have been wrong. The squash SHA is recorded in the table above only
+after the merge, as it was for F1 and F2.
 
-Gate evidence, all exit 0 against the committed tree: `typecheck`, `test:unit`, `test:integration`,
+Three things were measured rather than assumed.
+
+- **The binding publish time is 13:28 UTC, not the 13:23 this file previously quoted.**
+  `minimumReleaseAge` applies to all nine `@biomejs/*` lockfile entries, not to the meta-package
+  alone, and the last platform binary — `@biomejs/cli-linux-arm64@2.5.7` — was published
+  2026-08-04 13:28:24 UTC. The earlier clearance moment was therefore five minutes optimistic.
+- **The delay is enforced live, not from a cache.** `pnpm install` prints
+  `Lockfile passes supply-chain policies (verified 23h ago)`, which invites the assumption that a
+  recent pass short-circuits the check — and 23 hours earlier 2.5.7 was still too young. It does not
+  short-circuit: raising the threshold to 5000 minutes made the very same lockfile fail with
+  `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`, naming all nine entries and printing the computed cutoff.
+  The failed run left `pnpm-lock.yaml` byte-identical, SHA-256
+  `85876dbc5c4d6aa630bad8bef6ebc036fc0a7ec4633b27dc2a65dcca44d4b26a`.
+- **Biome 2.5.7 rewrites nothing.** Read-only first, as F2 Task 2 Step 2 requires:
+  `biome check packages/ai-tooling configs/ai` exits 0 over 56 files, and `biome check --write .`
+  over the whole repository reports `No fixes applied` for all 85 — so no formatter-driven change
+  reached the approved Phase 1 tree.
+
+The `minimumReleaseAge` comment in `pnpm-workspace.yaml` read "Re-check this value at the F2 entry
+snapshot", an instruction that had expired. It now records the outcome of that re-check instead.
+
+### The catalog was not actually single-sourcing anything — found and fixed here
+
+Raising the catalog alone produced a lockfile carrying **both** Biome 2.5.6 and 2.5.7. The cause is
+`autoInstallPeers`, which is pnpm 11's default and appears in the lockfile's `settings:` block, not in
+any file this repository wrote. Each config workspace declares its tool as a peer dependency with a
+wide range, so pnpm satisfied that peer by resolving it **separately** from the catalog — and having
+already found a satisfying version, it had no reason to move:
+
+| workspace | declared peer | what pnpm actually installed |
+|---|---|---|
+| `configs/biome-config` | `^2.3.11` | Biome 2.5.6, while the root ran 2.5.7 |
+| `configs/typescript-config` | `^6.0.0 \|\| ^7.0.0` | TypeScript 6.0.3, while the root ran 7.0.2 |
+
+**The second row was already on `main`.** F2 was titled "upgrade to TypeScript 7", but
+`pnpm -C configs/typescript-config exec tsc --version` still answered `Version 6.0.3`, and 24 MB of
+the old compiler stayed in the virtual store. Neither workspace defines a script, so nothing executed
+the stale tool — which is exactly why it went unnoticed, and exactly the trap the first script added
+in either directory would have fallen into.
+
+Fixed by declaring each peer as an explicit `catalog:` devDependency in the same `package.json`, so
+pnpm satisfies the peer from the catalog instead of resolving a second copy. `pnpm install` reports
+`Packages: -3`, all four `exec` probes (root and both configs, Biome and tsc) now answer 2.5.7 and
+7.0.2, and the lockfile holds exactly one version of each. `autoInstallPeers: false` was rejected as
+the alternative: it would change resolution for every dependency in the workspace to fix two known
+declarations.
+
+A devDependency is invisible to consumers of a published package, so widening these two manifests
+carries no public-contract change — unlike F2's peer-range widening, which did.
+
+### `check-licenses.mjs` counts orphans in the virtual store
+
+While reconciling the package count above, the licence guard reported 89 packages where the lockfile
+implied 86. `scripts/check-licenses.mjs:57` enumerates `node_modules/.pnpm` — the physical virtual
+store — rather than the lockfile, and an incremental `pnpm install` unlinked the superseded
+`@biomejs/biome@2.5.6`, `@biomejs/cli-win32-x64@2.5.6` and `typescript@6.0.3` without deleting their
+directories. So the guard licence-checked three packages that nothing referenced.
+
+Consequences, not yet addressed: the printed count drifts upward across incremental installs, a local
+run and a CI run of the same commit disagree, and a package long removed from the lockfile can still
+fail the build on its licence. A clean reinstall gives the honest figure — 86 on this branch, against
+87 for `main`, the difference being exactly the removed `typescript@6.0.3`. Left as a finding rather
+than fixed here, because changing what a supply-chain guard reads is its own decision.
+
+### `packages/ai-tooling/README.md` — first deliberate edit to the approved Phase 1 tree
+
+Line 27 claimed "The workspace pins pnpm `10.28.0`, TypeScript `6.0.3`, Biome `2.5.6`" — all three
+already false. It went stale precisely because F1 and F2 were forbidden to touch
+`packages/ai-tooling`, and the Phase 2 manifest does not list the file either, so no scheduled work
+would ever have corrected it. `README.md` is in the package's `files` array, so a publish would have
+shipped the wrong claim.
+
+Rather than restate the three current versions and set up the same drift again, the line now points at
+the `catalog` block in `pnpm-workspace.yaml` as the single source and keeps only the two facts that do
+not drift: `engines.node` and this package's own literal pins. This is the same reasoning F1 applied
+when it removed the Biome version from twelve `$schema` URLs.
+
+**This is the first change to the approved Phase 1 tree made outside a Stage 1 phase**, authorised by
+the owner on 2026-08-07. It is safe against the gates for reasons that were checked, not assumed: the
+`--phase 1 --tree` content digest is pinned nowhere in the repository, no test asserts README bytes
+(only its presence in `files` and in the tarball), and the Phase 2 plan asserts nothing about it.
+A future phase-delta comparison is unaffected, because a manifest is compared against its own base.
+
+### Phase 1 gate evidence
+
+All exit 0 against the committed tree `ec88ca3`: `typecheck`, `test:unit`, `test:integration`,
 `build`, `pack:check`, `check-stage1-artifacts.mjs --phase 1 --tree`, `pnpm check`,
 `git diff --check`, and `verify-phase-delta.mjs --phase 1 --base b3ec1b2 --commit ec88ca3`.
 128 tests pass.
