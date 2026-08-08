@@ -184,6 +184,28 @@ the owner on 2026-08-07. It is safe against the gates for reasons that were chec
 (only its presence in `files` and in the tarball), and the Phase 2 plan asserts nothing about it.
 A future phase-delta comparison is unaffected, because a manifest is compared against its own base.
 
+### GHSA-2v37-7h3g-55p8 — the first advisory the guard actually caught, 2026-08-08
+
+`check-audit.mjs` went from `0 advisories` to a blocking failure between two runs an hour apart:
+`nanoid < 3.3.17` loops indefinitely when a custom generator is called with size 0, rated high.
+
+It reaches the tree only through `vitest -> vite -> postcss`, so it is dev-only and can never be
+shipped — `packages/ai-tooling` declares just `ajv`, `json-canonicalize` and `jsonc-parser`, and
+`files` carries no test tooling. It is fixed rather than ignored anyway, because `check-audit.mjs`
+fails on any high advisory by design, CI runs `check:supply-chain`, and adding the first entry to an
+empty `IGNORED_ADVISORIES` list would spend the repository's one clean exception record on a
+dependency that had a patched version available the same day.
+
+Pinned through a `pnpm-workspace.yaml` override to exactly `3.3.17`, and the exactness is the point.
+The first attempt used `>=3.3.17`, which resolved to **`nanoid@6.0.1`** — a major jump across an API
+`postcss` does not expect, adopted silently by a one-line override. Caught by reading the resulting
+lockfile rather than by any check. `3.3.18` exists, published 2026-08-07 16:41 UTC, and is still
+inside `minimumReleaseAge`; `3.3.17` cleared it on 2026-08-06. The delay steering the choice of
+patch version is the second time it has done real work.
+
+Drop the override once `vite` ships a `postcss` that depends on a patched `nanoid` — an override that
+outlives its cause silently pins a transitive dependency forever.
+
 ### Phase 1 gate evidence
 
 All exit 0 against the committed tree `ec88ca3`: `typecheck`, `test:unit`, `test:integration`,

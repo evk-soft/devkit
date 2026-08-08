@@ -32,3 +32,11 @@ catalog:
   husky: ^9.1.7
   turbo: ^2.10.8
   typescript: ^7.0.2
+
+# --- Security overrides ---
+# GHSA-2v37-7h3g-55p8 (high): nanoid < 3.3.17 loops indefinitely when a custom generator is called
+# with size 0. Reached only through vitest -> vite -> postcss, so it is dev-only and never shipped,
+# but `check-audit.mjs` fails on any high advisory by design and CI runs it. 3.3.17 is the patched
+# floor and cleared minimumReleaseAge on 2026-08-06; 3.3.18 published 2026-08-07 and has not.
+overrides:
+  nanoid@<3.3.17: 3.3.17
