@@ -82,7 +82,7 @@ it('normalizes a git source URL inside the projection', () => {
   const projection = configurationProjectionV1(config) as {
     sources: readonly { readonly url: string }[];
   };
-  expect(projection.sources[0].url).toBe('https://example.com/a/repo.git');
+  expect(projection.sources[0]?.url).toBe('https://example.com/a/repo.git');
 });
 
 it('changes the configuration digest but not the selection digest when a platform changes', () => {

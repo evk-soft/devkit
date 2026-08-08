@@ -29,6 +29,7 @@
     "check:runtime": "node ./scripts/runtime-check.mjs",
     "check:structure": "pnpm run check:circular && pnpm run check:boundaries",
     "check:supply-chain": "pnpm run check:audit && pnpm run check:licenses",
+    "check:test-types": "node ./scripts/check-test-types.mjs",
     "changelog:check": "node ./scripts/changelog-assemble.mjs --check",
     "changelog:new": "node ./scripts/changelog-new.mjs",
     "format": "biome format --write .",

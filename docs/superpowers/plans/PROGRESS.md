@@ -268,25 +268,57 @@ a rejection could come from the linked worktree breaking the fixture rather than
 `git diff --exit-code HEAD -- <the verifier>`, which forbids an *uncommitted* edit at phase time; a
 committed change between phases satisfies it. Phases must be gated with the new bytes from here on.
 
-### Still outstanding after that work
+### The test suite had never been typechecked — closed 2026-08-08
 
-- **The test suite is not typechecked at all.** `packages/ai-tooling/tsconfig.json` has
-  `include: ["src/**/*.ts"]`, and Vitest transpiles without checking types, so no `.spec.ts` file has
-  ever been typechecked. That makes the last two deferred items -- packet 4B step 5 and packet 5B
-  step 5, both of which are `@ts-expect-error` and type-identity assertions -- impossible to close
-  honestly: written today they would be inert decoration. The plan assumed otherwise; its expected
-  result is "every `@ts-expect-error` is exercised", which requires a compiler that sees them.
-  Extending the existing `tsconfig.json` is not the fix: `rootDir: src` with `composite` and
-  `outDir: dist` means including tests would emit them into `dist`, and `pack:check` asserts the
-  tarball contents exactly. A new `tsconfig.test.json` under `packages/ai-tooling` would be reported
-  as `undeclared-entry` by the artifact scanner, whose `OWNED_ROOTS` are `packages/ai-tooling` and
-  `configs/ai`. The repository-root `scripts/` directory is outside those roots and already holds the
-  four guard scripts, so the intended shape is a root-level guard with its own script and CI step --
-  deliberately **not** inside `pnpm check`, which Stage 1 phase gates invoke literally and which must
-  not acquire new failure modes. Planned as its own pull request.
-- `tsc` 7 rejects command-line file arguments while a `tsconfig.json` is present (`TS5112`, new in 7)
-  and does not expand globs in file arguments (`TS6053`). Both were measured. So the guard has to
-  enumerate files itself and pass `--ignoreConfig`.
+The last two deferred items, packet 4B step 5 and packet 5B step 5, are `@ts-expect-error` and
+type-identity assertions. Writing them exposed that they could not have meant anything:
+`packages/ai-tooling/tsconfig.json` has `include: ["src/**/*.ts"]` and Vitest transpiles without
+checking types, so **no `.spec.ts` file had ever been seen by a compiler**. An `@ts-expect-error`
+would have suppressed nothing and failed nothing. The plan assumed otherwise — its expected result is
+"every `@ts-expect-error` is exercised", which requires a compiler that sees them.
+
+Two shapes were rejected before the third was chosen. Extending the workspace `tsconfig.json` fails
+because `rootDir: src` with `composite` and `outDir: dist` would emit the tests into `dist`, and
+`pack:check` asserts the tarball contents exactly. A `tsconfig.test.json` beside the tests fails
+because `check-stage1-artifacts.mjs` reports any file under its owned roots — `packages/ai-tooling`
+and `configs/ai` — that no phase manifest declares as `undeclared-entry`, and those manifests are
+committed records of what each phase delivered, not lists to be reopened. So the guard lives at
+`scripts/check-test-types.mjs`, beside the four that already exist, outside the scanner's roots.
+
+It derives its compiler options from each workspace's own `tsconfig.json` rather than restating them,
+minus the emit-shaped ones, so the two cannot drift apart. `allowJs` is the single added option, and
+it is load-bearing: two specs import the repository's own `scripts/*.mjs` guards directly, and
+without it every such import is an implicit `any` and the assertions written against them check
+nothing. `checkJs` stays off.
+
+Two TypeScript 7 behaviours shape the invocation, both measured: `TS5112` refuses command-line file
+arguments while a `tsconfig.json` is present, so `--ignoreConfig` is required; and `TS6053` shows
+that file arguments are not glob-expanded, so the guard enumerates files through `git ls-files`.
+It is deliberately **not** part of `pnpm check`, which Stage 1 phase gates invoke literally and which
+must not acquire new failure modes — it is its own script and its own CI step, like `check:structure`
+and `check:supply-chain`.
+
+Turning it on surfaced **6 real type errors** in four existing spec files, none of them introduced by
+this work: four `noUncheckedIndexedAccess` violations indexing a regex capture and a `Uint8Array`,
+one unchecked `sources[0]`, and one `exactOptionalPropertyTypes` violation passing `candidate:
+undefined` explicitly where omitting the property was meant. All six are fixed by narrowing rather
+than by loosening a compiler option.
+
+The guard was proven in both directions rather than assumed. A deliberate `const x: number =
+"string"` in a spec makes it exit 1 with the exact diagnostic; removing it restores exit 0. And
+removing the `@ts-expect-error` markers makes all five suppressed errors surface, which is what shows
+they are real:
+
+| diagnostic | what it establishes |
+|---|---|
+| `TS2558: Expected 0 type arguments, but got 1` | `parseStrictJson<ConfigV1>` is not expressible |
+| `TS2741: Property '[strictJsonBrand]' is missing` | `StrictJsonDocument` cannot be built from a literal |
+| `TS2739: 'StrictJsonDocument' is missing … from 'ConfigV1'` | parser output is not a domain type |
+| `TS2739: 'LockV1' is missing sources, platforms` | `validate('lock', …)` is not `ConfigV1` |
+| `TS2345: '"lock"' is not assignable to '"config"'` | the generic follows the name, not the caller |
+
+That is packet 4B step 5's three requirements and packet 5B step 5's three, and it closes the last of
+the Phase 1 deferred items.
 
 
 ### Phase 1 gate evidence

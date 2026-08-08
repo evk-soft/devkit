@@ -142,10 +142,16 @@ function mutate(mutation: string): Uint8Array {
       return Uint8Array.from(base.slice(0, -1));
     case 'drop-first':
       return Uint8Array.from(base.slice(1));
-    case 'alter-first':
-      return Uint8Array.from([base[0] ^ 0x20, ...base.slice(1)]);
-    case 'alter-last':
-      return Uint8Array.from([...base.slice(0, -1), base[base.length - 1] ^ 0x20]);
+    case 'alter-first': {
+      const first = base[0];
+      if (first === undefined) throw new Error('cannot alter the first byte of an empty body');
+      return Uint8Array.from([first ^ 0x20, ...base.slice(1)]);
+    }
+    case 'alter-last': {
+      const last = base[base.length - 1];
+      if (last === undefined) throw new Error('cannot alter the last byte of an empty body');
+      return Uint8Array.from([...base.slice(0, -1), last ^ 0x20]);
+    }
     case 'duplicate':
       return Uint8Array.from([...base, ...base]);
     case 'append-lf':
