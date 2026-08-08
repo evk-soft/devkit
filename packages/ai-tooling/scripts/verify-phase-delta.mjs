@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 const LINE = /^(A|M) 100644 ([A-Za-z0-9._/-]+)$|^D - ([A-Za-z0-9._/-]+)$/u;
 const OBJECT_ID = /^[0-9a-f]{40}$/u;
 const MAX_OBJECT_BYTES = 16 * 1024 * 1024;
+const PARTIAL_CLONE_REMOTE_KEY = /^remote\..*\.(?:promisor|partialclonefilter)$/u;
 
 export function parseManifest(bytes) {
   let text;
@@ -210,7 +211,13 @@ function assertCleanAdminState(context) {
   ).trim();
   if (replaceRefs !== '') throw adminStateError('replace ref');
 
-  const config = decode(runGit(context, ['config', '--list', '--local', '-z']));
+  // Deliberately unscoped, not `--local`. Worktree-scoped configuration lives in
+  // `.git/worktrees/<name>/config.worktree`, which `--local` cannot see -- and every phase
+  // executes in a linked worktree, so `--local` left the guard blind exactly where the
+  // protocol operates. Under the frozen environment the system config is off and the global
+  // config is a zero-byte file, so an unscoped read is precisely local plus worktree plus the
+  // `-c core.*` options this module itself passes, none of which match a rejected prefix.
+  const config = decode(runGit(context, ['config', '--list', '-z']));
   for (const entry of config.split('\0')) {
     if (entry === '') continue;
     const newline = entry.indexOf('\n');
@@ -220,6 +227,13 @@ function assertCleanAdminState(context) {
     }
     if (key.startsWith('include.') || key.startsWith('includeif.')) {
       throw new Error('hostile repository configuration: include');
+    }
+    // A partial clone answers object queries from a promisor remote. `--no-lazy-fetch` and
+    // GIT_NO_LAZY_FETCH make a genuinely absent object fail the query rather than be fetched,
+    // so this is defence in depth: the delta a phase is gated on must never be computed
+    // against a repository whose object store is declared incomplete.
+    if (key === 'extensions.partialclone' || PARTIAL_CLONE_REMOTE_KEY.test(key)) {
+      throw new Error('hostile repository configuration: partial clone');
     }
   }
 }

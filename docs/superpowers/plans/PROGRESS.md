@@ -206,6 +206,89 @@ patch version is the second time it has done real work.
 Drop the override once `vite` ships a `postcss` that depends on a patched `nanoid` — an override that
 outlives its cause silently pins a transitive dependency forever.
 
+### The phase gate had a real bypass — found and closed 2026-08-08
+
+Closing the Phase 1 deferred fixtures was expected to be characterisation work: this file recorded
+that "the code rejects all of these; no test asserts it". For four of the six that was true. For two
+it was not, and writing the tests is what proved it.
+
+**Worktree-scoped configuration was invisible to the preflight.** `assertCleanAdminState` read
+`git config --list --local`. Worktree-scoped configuration lives in
+`.git/worktrees/<name>/config.worktree`, which `--local` cannot see -- and section 0.3 executes every
+phase **in a linked worktree**. So the guard was blind in exactly the place the protocol operates.
+Demonstrated end to end before any fix: a hostile `filter.*` written with `git config --worktree`
+made `verifyPhaseDelta` **resolve successfully**, while the identical key in local scope was rejected
+with `hostile repository configuration: filter`. The same held for `include.path`. A clean/smudge
+filter makes working-tree content differ from object content, so this was a way to falsify the very
+delta a phase is gated on.
+
+Fixed by dropping `--local`. Under the frozen environment the system config is off and the global
+config is a zero-byte file, so an unscoped `git config --list` is exactly local plus worktree plus
+the `-c core.*` options the module passes itself, none of which match a rejected prefix.
+
+**Partial-clone markers were not checked at all.** `extensions.partialClone`,
+`remote.*.promisor` and `remote.*.partialclonefilter` all passed, because the loop only rejected the
+`filter.` and `include.`/`includeif.` prefixes. Stated precisely: this is a missing check, **not** a
+demonstrated bypass. The verifier's queries compare object IDs and never read blob contents, and
+`--no-lazy-fetch` makes a genuinely absent object fail the query rather than be fetched. It is now
+rejected as defence in depth.
+
+CI caught a platform difference that the Windows-only local run could not. The tilde fixture
+(`include.path = ~/evil/config`) fails on Linux with `git query failed: rev-parse`, not with the
+include guard: the frozen environment is built from an empty map and carries no `HOME`, so Linux Git
+has nothing to expand `~` into and fails while loading the configuration -- during the preflight's
+first `rev-parse`, before the guard reads a single key. On Windows the same fixture reaches the guard
+and is rejected by key. Both outcomes are fail-closed, so the test asserts that verification never
+succeeds rather than asserting one platform's message. This is exactly what the Windows CI leg
+introduced in F1 exists for, running in the opposite direction.
+
+The four that behaved as recorded, now covered: the `include.*` rejection is by key and independent
+of path shape (absolute, relative, tilde, UNC, and conditional `includeIf.gitdir` all rejected); and
+gitfile/commondir routing does reach the common directory from a linked worktree (alternates,
+`info/grafts`, `shallow` and a nonempty `info/exclude` all rejected there). The raw `parent` header
+cases are now asserted directly against the exported `parseRawCommit`: repeated parent, non-hex,
+uppercase, truncated, duplicate `tree`, missing `tree`, and an unknown header, plus the zero-, one-
+and two-parent shapes.
+
+**Executable swap and config-root cleanup race were replaced with deterministic properties**, by
+owner decision: both are races, and a racing test is a flaky test on two CI platforms. What those
+fixtures were meant to establish is asserted without timing -- every spawn uses the injected
+`runtime.gitPath` and no other file, with `shell: false` and one fixed cwd; the frozen config root
+holds exactly three distinct zero-byte regular files inside itself; and `buildFrozenEnvironment`
+exposes exactly seven `GIT_*` variables even when `GIT_DIR`, `GIT_ALTERNATE_OBJECT_DIRECTORIES`,
+`GIT_CONFIG_COUNT` and `GIT_REPLACE_REF_BASE` are set in the ambient environment.
+
+The suite went from 31 to 57 tests in `tests/unit/verify-phase-delta.spec.ts`. RED was observed before
+GREEN: with the verifier reverted to its previous bytes, both worktree-scoped cases and all three
+partial-clone cases fail; with the fix they pass. A positive control -- an exact delta verified from
+a linked worktree with nothing hostile present -- is deliberately part of the set, because without it
+a rejection could come from the linked worktree breaking the fixture rather than from the guard.
+
+**`verify-phase-delta.mjs` changed bytes for the first time since `ec88ca3`.** The Phase 2-5 rule is
+`git diff --exit-code HEAD -- <the verifier>`, which forbids an *uncommitted* edit at phase time; a
+committed change between phases satisfies it. Phases must be gated with the new bytes from here on.
+
+### Still outstanding after that work
+
+- **The test suite is not typechecked at all.** `packages/ai-tooling/tsconfig.json` has
+  `include: ["src/**/*.ts"]`, and Vitest transpiles without checking types, so no `.spec.ts` file has
+  ever been typechecked. That makes the last two deferred items -- packet 4B step 5 and packet 5B
+  step 5, both of which are `@ts-expect-error` and type-identity assertions -- impossible to close
+  honestly: written today they would be inert decoration. The plan assumed otherwise; its expected
+  result is "every `@ts-expect-error` is exercised", which requires a compiler that sees them.
+  Extending the existing `tsconfig.json` is not the fix: `rootDir: src` with `composite` and
+  `outDir: dist` means including tests would emit them into `dist`, and `pack:check` asserts the
+  tarball contents exactly. A new `tsconfig.test.json` under `packages/ai-tooling` would be reported
+  as `undeclared-entry` by the artifact scanner, whose `OWNED_ROOTS` are `packages/ai-tooling` and
+  `configs/ai`. The repository-root `scripts/` directory is outside those roots and already holds the
+  four guard scripts, so the intended shape is a root-level guard with its own script and CI step --
+  deliberately **not** inside `pnpm check`, which Stage 1 phase gates invoke literally and which must
+  not acquire new failure modes. Planned as its own pull request.
+- `tsc` 7 rejects command-line file arguments while a `tsconfig.json` is present (`TS5112`, new in 7)
+  and does not expand globs in file arguments (`TS6053`). Both were measured. So the guard has to
+  enumerate files itself and pass `--ignoreConfig`.
+
+
 ### Phase 1 gate evidence
 
 All exit 0 against the committed tree `ec88ca3`: `typecheck`, `test:unit`, `test:integration`,
@@ -276,15 +359,8 @@ Covered by tests: all of the above, plus zero-parent and merge candidates, a par
 approved base, symbolic revisions, invalid UTF-8 manifests, rename reported as delete plus add, and
 inherited `GIT_DIR`/`GIT_WORK_TREE`/`GIT_INDEX_FILE` being ignored.
 
-Still outstanding from master 1.0 lines 2086-2104, deferred as lower-value or Windows-awkward:
-
-- partial-clone promisor missing-object marker
-- absolute / relative / tilde / UNC repository-config includes as distinct fixtures (the `include.*`
-  rejection already covers them by key, not by path shape)
-- worktree-scoped `filter.*` and a stat-dirty filtered-path helper marker
-- linked-worktree gitfile/commondir routing fixture (the code reads both dirs; no test asserts it)
-- Git executable swap and config-root cleanup-race
-- duplicate / malformed / different raw `parent` header fixtures (the parser rejects them; no test)
+The fixtures deferred from master 1.0 lines 2086-2104 were closed on 2026-08-08 -- see
+"The phase gate had a real bypass" below. Two of the six turned out not to be missing tests at all.
 
 `scripts/verify-phase-delta.mjs` also gained the command-line entry point the section 0.3 protocol
 invokes (`--phase N --worktree|--cached`, or `--phase N --base <sha> --commit <sha>`). Verified
