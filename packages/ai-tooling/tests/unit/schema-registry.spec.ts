@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, it, vi } from 'vitest';
+import type { ConfigV1, LockV1 } from '../../src/config/types.js';
 import { createOfflineSchemaRegistry, type SchemaName } from '../../src/json/schema-registry.js';
 import { parseStrictJson, type StrictJsonDocument } from '../../src/json/strict-json.js';
 import type { RedactedSource } from '../../src/model/types.js';
@@ -157,4 +158,29 @@ it('fails locally when a schema reference cannot be resolved', () => {
   );
   const registry = createOfflineSchemaRegistry();
   expect(() => registry.compileForeign(unresolved)).toThrowError();
+});
+
+// Packet 5B step 5 -- compile-time assertions.
+//
+// Like the ones in strict-json.spec.ts, these are only real because the test sources are
+// typechecked by `scripts/check-test-types.mjs`. `validate` is generic over the schema *name*, and
+// the whole point of `SchemaTypeMap` is that the result type follows from that name rather than
+// from what the caller would like it to be.
+it('types a validated document by schema name, not by caller choice', () => {
+  const registry = createOfflineSchemaRegistry();
+  const lock = registry.validate('lock', validDocument('lock'));
+
+  // Positive half: the result is a LockV1 and its fields are reachable with no cast.
+  const asLock: LockV1 = lock;
+  expect(asLock.version).toBe(1);
+  expect(asLock.packs).toHaveLength(1);
+
+  // @ts-expect-error a validated lock is not a validated configuration. The return type is keyed to
+  // the schema name, so one validated document cannot be reinterpreted as another.
+  const asConfig: ConfigV1 = lock;
+  expect(asConfig).toBeDefined();
+
+  // @ts-expect-error the type parameter is inferred from the name argument and may not disagree
+  // with it, so a caller cannot select the result type independently of the schema being applied.
+  registry.validate<'config'>('lock', validDocument('lock'));
 });

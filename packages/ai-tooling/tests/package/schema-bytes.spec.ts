@@ -37,6 +37,9 @@ it.each(SCHEMA_FILES)('keeps %s closed and free of remote references', async (fi
   // has to resolve entirely offline.
   for (const reference of text.matchAll(/"\$ref"\s*:\s*"([^"]+)"/gu)) {
     const target = reference[1];
+    // The capture group is not optional in the pattern, but `noUncheckedIndexedAccess` cannot know
+    // that. Throwing keeps the type narrow without weakening the assertion into a `?? ''`.
+    if (target === undefined) throw new Error('$ref capture group did not match');
     const isLocal = target.startsWith('#');
     const isSibling = SCHEMA_FILES.some((name) => target.startsWith(`${name}#`) || target === name);
     expect(isLocal || isSibling).toBe(true);

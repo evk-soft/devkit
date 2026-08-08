@@ -3,8 +3,9 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, it, vi } from 'vitest';
 
+import type { ConfigV1 } from '../../src/config/types.js';
 import { DIAGNOSTIC_CODES } from '../../src/diagnostics/codes.js';
-import { parseStrictJson } from '../../src/json/strict-json.js';
+import { parseStrictJson, type StrictJsonDocument } from '../../src/json/strict-json.js';
 
 const FIXTURES = join(fileURLToPath(new URL('../fixtures/json/', import.meta.url)));
 const source = { kind: 'fixture', label: 'strict-json' } as const;
@@ -101,4 +102,34 @@ it('rejects a number that underflows to zero', () => {
 
 it('rejects a number that overflows to infinity', () => {
   expectJsonInvalid(new TextEncoder().encode('{"a":1e400}'));
+});
+
+// Packet 4B step 5 -- compile-time assertions.
+//
+// These lines only mean anything because `scripts/check-test-types.mjs` typechecks this file.
+// Vitest transpiles without checking types, so before that guard existed an `@ts-expect-error` here
+// would have asserted nothing at all. tsc reports an *unused* `@ts-expect-error` as an error, which
+// is what makes each one below load-bearing in both directions: the line must fail to compile, and
+// it must fail for a reason that still exists.
+it('keeps unvalidated parser output out of the domain types', () => {
+  const bytes = new TextEncoder().encode('{"version":1}');
+
+  // @ts-expect-error the parser takes no type parameter. A caller may not ask it to return a domain
+  // type that only schema validation is allowed to produce.
+  parseStrictJson<ConfigV1>(bytes, source);
+
+  const document = parseStrictJson(bytes, source);
+
+  // @ts-expect-error the brand is a unique symbol private to the module, so a document cannot be
+  // built from an object literal and passed off as parsed.
+  const forged: StrictJsonDocument = { value: { version: 1 } };
+
+  // @ts-expect-error a parsed document is not a validated configuration. Only the offline schema
+  // registry may produce one, and this is the boundary that makes that structural rather than a
+  // rule to remember.
+  const asConfig: ConfigV1 = document;
+
+  expect(document.value).toStrictEqual({ version: 1 });
+  expect(forged).toBeDefined();
+  expect(asConfig).toBeDefined();
 });

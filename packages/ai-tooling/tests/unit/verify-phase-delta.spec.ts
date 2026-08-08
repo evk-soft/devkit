@@ -365,9 +365,10 @@ it('accepts an exact one-parent commit delta', async () => {
 });
 
 it('rejects a merge candidate in commit mode', async () => {
+  // `candidate` is simply omitted. Passing it explicitly as `undefined` is a different thing under
+  // `exactOptionalPropertyTypes`, and the fixture treats absence and explicit undefined alike.
   const fixture = await makeRepository({
     manifest: ['A 100644 side.txt'],
-    candidate: undefined,
     mergeCandidate: true,
   });
   await expect(
